@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Generador - Cuadrados Medios</h2>
+<form method="POST">
+  <div class="mb-3">
+    <label>Semilla:</label>
+    <input type="number" name="semilla" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label>Iteraciones:</label>
+    <input type="number" name="iteraciones" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label>Valor mínimo Ni:</label>
+    <input type="number" step="0.01" name="min" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label>Valor máximo Ni:</label>
+    <input type="number" step="0.01" name="max" class="form-control" required>
+  </div>
+  <button type="submit" class="btn btn-primary">Generar</button>
+  <button formaction="/exportar_csv" formmethod="POST" class="btn btn-success">Exportar CSV</button>
+  <button formaction="/grafico" formmethod="POST" class="btn btn-info">Ver Gráfico</button>
+</form>
+
+{% if table %}
+<hr>
+<h3>Resultados</h3>
+{{ table|safe }}
+{% endif %}
+{% endblock %}
