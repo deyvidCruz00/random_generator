@@ -1,67 +1,158 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, send_file
 import pandas as pd
-import os
+import io
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
 from modules.generadores.minimos_cuadrados import generar as generar_mc
 from modules.generadores.congruencia_lineal import generar as generar_cl
 from modules.generadores.congruencia_multi import generar as generar_cm
 #from modules.pruebas import media as prueba_media_mod
 
+
+
 app = Flask(__name__)
-# variables globales temporales (puedes sustituir por almacenamiento en DB o archivos)
-secuencia_df = None
-secuencia_ri = None
 
-# carpeta outputs
-os.makedirs("outputs", exist_ok=True)
-
-@app.route("/", methods=["GET", "POST"])
+# Página principal
+@app.route("/")
 def index():
-    if request.method == "POST":
-        metodo = request.form["metodo"]
-        semilla = int(request.form["semilla"])
-        n = int(request.form["n"])
-        # selección de generador
-        if metodo == "cuadrados":
-            df = generar_mc(semilla, n, 0, 10)
-            ri_list = df["Ri"].tolist()
-        else:
-            return "Método no implementado", 400
-        
-
-        # guardar en variables globales para usar en pruebas y para exportar
-        global secuencia_df, secuencia_ri
-        secuencia_df = df
-        secuencia_ri = ri_list
-
-        # guardar CSV de salida para permitir descarga
-        out_path = "outputs/secuencia.csv"
-        df.to_csv(out_path, index=False)
-
-        # renderizar resultado (pasa el HTML de la tabla)
-        table_html = df.to_html(classes="table table-striped", index=False, justify="center")
-        return render_template("resultado.html", table_html=table_html)
-
     return render_template("index.html")
 
+# Cuadrados medios
+@app.route("/cuadrados", methods=["GET", "POST"])
+def cuadrados():
+    data = None
+    semilla = ""
+    n = ""
+    min_val = ""
+    max_val = ""
 
-# @app.route("/pruebas", methods=["GET", "POST"])
-# def pruebas():
-#     global secuencia_ri
-#     if secuencia_ri is None:
-#         return redirect(url_for("index"))
+    if request.method == "POST":
+        semilla = request.form["semilla"]
+        n = request.form["iteraciones"]
+        min_val = request.form["min"]
+        max_val = request.form["max"]
 
-#     # Por simplicidad, ejecutamos la prueba de medias si se accede:
-#     resultados_media = prueba_media_mod.prueba_media(secuencia_ri, alpha=0.05)
-#     return render_template("pruebas.html", resultados=resultados_media)
+        df = generar_mc(int(semilla), int(float(n)), float(min_val), float(max_val))
+        data = df.to_html(classes="table table-bordered table-striped", index=False)
+
+    return render_template("cuadrados.html", 
+                           table=data, 
+                           semilla=semilla, 
+                           n=n, 
+                           min_val=min_val, 
+                           max_val=max_val)
+
+@app.route("/lineal", methods=["GET", "POST"])
+def lineal():
+    data = None
+    xo = ""
+    k = ""
+    c = ""
+    g = ""
+    n = ""
+    min_val = ""
+    max_val = ""
+
+    if request.method == "POST":
+        xo = request.form["xo"]
+        k = request.form["k"]
+        c = request.form["c"]
+        g = request.form["g"]
+        n = request.form["iteraciones"]
+        min_val = request.form["min"]
+        max_val = request.form["max"]
+
+        # Aquí llamamos al generador de congruencia lineal
+        df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)), float(min_val), float(max_val))
+        data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
+
+    return render_template("lineal.html", 
+                           table=data, 
+                           xo=xo, 
+                           k=k, 
+                           c=c, 
+                           g=g, 
+                           n=n, 
+                           min_val=min_val, 
+                           max_val=max_val)
+
+@app.route("/multiplicativo", methods=["GET", "POST"])
+def multiplicativo():
+    data = None
+    xo = ""
+    k = ""
+    t = ""
+    g = ""
+    n = ""
+    min_val = ""
+    max_val = ""
+
+    if request.method == "POST":
+        xo = request.form["xo"]
+        t = request.form["t"]
+        g = request.form["g"]
+        n = request.form["iteraciones"]
+        min_val = request.form["min"]
+        max_val = request.form["max"]
+
+        # Llamamos al generador de congruencia multiplicativa
+        df = generar_cm(int(xo), int(t), int(g), int(float(n)), float(min_val), float(max_val))
+        data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
+
+    return render_template("multiplicativo.html",
+                           table=data,
+                           xo=xo,
+                           k=k,
+                           t=t,
+                           g=g,
+                           n=n,
+                           min_val=min_val,
+                           max_val=max_val)
 
 
-@app.route("/descargar")
-def descargar():
-    path = "outputs/secuencia.csv"
-    if os.path.exists(path):
-        return send_file(path, as_attachment=True)
-    return redirect(url_for("index"))
+# Exportar CSV
+@app.route("/exportar_csv", methods=["POST"])
+def exportar_csv():
+    semilla = int(request.form["semilla"])
+    n = int(request.form["iteraciones"])
+    min_val = float(request.form["min"])
+    max_val = float(request.form["max"])
 
+    df = generar_mc(semilla, n, min_val, max_val)
+
+    buffer = io.StringIO()
+    df.to_csv(buffer, index=False)
+    buffer.seek(0)
+
+    return send_file(io.BytesIO(buffer.getvalue().encode()),
+                     mimetype="text/csv",
+                     as_attachment=True,
+                     download_name="numeros.csv")
+
+# Gráfico
+@app.route("/grafico", methods=["POST"])
+def grafico():
+    semilla = int(request.form["semilla"])
+    n = int(request.form["iteraciones"])
+    min_val = float(request.form["min"])
+    max_val = float(request.form["max"])
+
+    df = generar_mc(semilla, n, min_val, max_val)
+
+    plt.figure(figsize=(6,4))
+    plt.plot(df["i"], df["Ri"], marker="o", linestyle="--")
+    plt.title("Comportamiento de Ri")
+    plt.xlabel("Iteración")
+    plt.ylabel("Ri")
+    plt.grid()
+
+    img = io.BytesIO()
+    plt.savefig(img, format="png")
+    img.seek(0)
+
+    return send_file(img, mimetype="image/png")
 
 if __name__ == "__main__":
     app.run(debug=True)

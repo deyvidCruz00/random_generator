@@ -10,8 +10,8 @@ def generar(x_o, k, c, g, n, a_intervalo=0, b_intervalo=10):
     for i in range(n):
         x_i = np.mod(((a * x_a) + c), m)
         x_a = x_i
-        r_i = round(x_i / m, 5)
-        ni = round(a_intervalo + (b_intervalo - a_intervalo) * r_i, 5)
+        r_i = truncar(x_i / m, 5)
+        ni = truncar(a_intervalo + (b_intervalo - a_intervalo) * r_i, 5)
 
         registros.append({
             "i": i,
@@ -26,6 +26,9 @@ def generar(x_o, k, c, g, n, a_intervalo=0, b_intervalo=10):
     df = pd.DataFrame(registros)
     return df
 
+def truncar(n, decimales=0):
+    factor = 10.0 ** decimales
+    return int(n * factor) / factor
 # Ejemplo de uso
 # x_o = 123456
 # k = 7
