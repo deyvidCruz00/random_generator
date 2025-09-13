@@ -1,11 +1,11 @@
 import numpy as np
 import math
-import matplotlib.pyplot as plt
 from scipy.stats import norm
+import json
 
 def prueba_de_medias(datos, alpha=0.05, mu_esperada=0.5):
     # Convertir a array
-    datos = np.array(datos)
+    datos = np.array(datos).tolist()  # Para que sea serializable en JSON
     n = len(datos)
 
     # Estadísticos básicos
@@ -25,28 +25,27 @@ def prueba_de_medias(datos, alpha=0.05, mu_esperada=0.5):
     else:
         decision = "Se rechaza H0 (la media esperada difiere de la muestral)."
 
-    # Gráfica
-    plt.figure(figsize=(7,4))
-    plt.axvline(mu_esperada, color='red', linestyle='--', label=f"Media esperada = {mu_esperada}")
-    plt.axvline(media_muestra, color='blue', linestyle='-', label=f"Media muestral = {media_muestra:.3f}")
-    plt.hlines(y=0.5, xmin=limite_inferior, xmax=limite_superior, color='green', linewidth=3, label="IC 95%")
-    plt.scatter(media_muestra, 0.5, color='blue', zorder=5)
-    plt.title("Prueba de Medias con Intervalo de Confianza")
-    plt.xlabel("Valor de la media")
-    plt.legend()
-    plt.show()
-
-    return {
+    # Construcción del diccionario con todas las variables
+    resultado = {
+        "datos": datos,
+        "n": n,
+        "alpha": alpha,
+        "mu_esperada": mu_esperada,
         "media_muestra": media_muestra,
+        "z": z,
+        "error": error,
         "limite_inferior": limite_inferior,
         "limite_superior": limite_superior,
         "decision": decision
     }
 
+    # Retornar en formato JSON
+    return json.dumps(resultado, indent=4)
 
+
+# Ejemplo de uso
 np.random.seed(42)
 datos = np.random.uniform(0,1,50)
 
 resultado = prueba_de_medias(datos, alpha=0.05)
-
-print(datos)
+print(resultado)
