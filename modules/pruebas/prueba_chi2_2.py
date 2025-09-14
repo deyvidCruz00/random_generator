@@ -33,14 +33,24 @@ def prueba_chi_cuadrado(datos, k, alpha=0.05):
     
     # Construcción de la respuesta en formato JSON
     resultado = {
+        "test_name": "chi-cuadrado",
+        "sample_size": n,
+        "intervals": k,
+        "significance_level": alpha,
+        "degrees_freedom": k-1,
+        "range": {
+            "minimum": round(float(minimo), 8),
+            "maximum": round(float(maximo), 8)
+        },
         "intervalos": [],
         "totales": {
             "frecuencia_obt_total": int(np.sum(frecuencias_obs)),
             "frecuencia_esp_total": int(freq_esp * k),
             "chi2_total": round(float(chi2_total), 4),
             "chi2_critico": round(float(chi2_critico), 4),
-            "pasa_prueba": bool(chi2_total < chi2_critico)  # 👈 True/False -> JSON true/false
-        }
+            "pasa_prueba": bool(chi2_total < chi2_critico)
+        },
+        "decision": "No se rechaza H0 (pasa la prueba)" if chi2_total < chi2_critico else "Se rechaza H0 (no pasa la prueba)"
     }
 
     for i in range(k):
@@ -53,7 +63,6 @@ def prueba_chi_cuadrado(datos, k, alpha=0.05):
             "chi2": round(float(chi2_vals[i]), 3)
         })
 
-    # 👇 Convertimos el diccionario a JSON válido
     return json.dumps(resultado, ensure_ascii=False, indent=2)
 
 # ==============================

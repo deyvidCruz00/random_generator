@@ -13,10 +13,11 @@ def kolmogorov_smirnov_test(data, k):
     # Construcción de intervalos
     intervalos = [(minimo + i * amplitud, minimo + (i+1) * amplitud) for i in range(k)]
     
-    # Resultados
-    resultados = []
+    # Resultados de intervalos
+    intervalos_data = []
     frec_acum = 0 
     frec_esp_acum = 0
+    max_diferencia = 0
     
     for i, (ini, fin) in enumerate(intervalos, start=1):
         # Frecuencia observada
@@ -34,8 +35,9 @@ def kolmogorov_smirnov_test(data, k):
         
         # Diferencia
         dif = abs(p_obt - p_esp)
+        max_diferencia = max(max_diferencia, dif)
         
-        resultados.append({
+        intervalos_data.append({
             "No": i,
             "Inicial": truncar(ini, 5),
             "Final": truncar(fin, 5),
@@ -47,7 +49,25 @@ def kolmogorov_smirnov_test(data, k):
             "Dif": round(dif, 2)
         })
     
-    return json.dumps(resultados, indent=4)
+    # Estructura del JSON con información de la prueba KS
+    resultado = {
+        "test_name": "Prueba KS",
+        "sample_size": n,
+        "intervals": k,
+        "range": {
+            "minimum": truncar(minimo, 5),
+            "maximum": truncar(maximo, 5),
+            "amplitude": truncar(amplitud, 5)
+        },
+        "intervals_data": intervalos_data,
+        "statistics": {
+            "max_difference": round(max_diferencia, 4),
+            "critical_value": "Debe compararse con tabla de valores críticos",
+            "decision": "Requiere comparación con valor crítico para α dado"
+        }
+    }
+    
+    return json.dumps(resultado, indent=4, ensure_ascii=False)
 
 # Datos de prueba
 datos = [

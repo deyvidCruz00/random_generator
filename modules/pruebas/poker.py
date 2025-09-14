@@ -9,7 +9,7 @@ def truncate(num, decimals=5):
 def poker_test_json(numbers):
     """
     numbers: lista de números pseudoaleatorios
-    Retorna un JSON con observados, esperados, chi² y decisión.
+    Retorna un JSON con la estructura similar a la tabla mostrada.
     """
 
     n = len(numbers)
@@ -47,37 +47,53 @@ def poker_test_json(numbers):
 
     # Recuento de observados
     observed = {cat: 0 for cat in probs}
-    classified = []  # Para guardar clasificación individual
-    for num in numbers:
-        cat = classify(num)
-        observed[cat] += 1
-        classified.append({"number": truncate(num), "category": cat})
 
     # Esperados
     expected = {cat: truncate(n * p) for cat, p in probs.items()}
 
-    # Cálculo de Chi²
-    chi2_terms = {cat: truncate(((observed[cat] - expected[cat])**2) / expected[cat]) 
-                  for cat in probs if expected[cat] > 0}
-    chi2_stat = truncate(sum(chi2_terms.values()))
+    # Estructura de datos similar a la tabla
+    categories_data = []
+    suma_oi = 0
+    suma_chi2 = 0
+    
+    for cat in ["D", "O", "T", "K", "F", "P", "Q"]:
+        oi = observed[cat]
+        prob = probs[cat]
+        ei = expected[cat]
+        
+        # Cálculo de (Oi-Ei)^2 / Ei solo si Ei > 0
+        chi2_component = truncate(((oi - ei)**2) / ei) if ei > 0 else 0
+        
+        categories_data.append({
+            "Cat": cat,
+            "Oi": oi,
+            "Prob": prob,
+            "Ei": truncate(ei),
+            "(Oi-Ei)^2/Ei": chi2_component
+        })
+        
+        suma_oi += oi
+        suma_chi2 += chi2_component
 
     # Valor crítico (gl = categorias-1 = 6, alfa=0.05 → 12.59 aprox.)
     chi2_critical = 12.5916
 
     result = {
-        "n": n,
-        "observed": observed,
-        "expected": expected,
-        "chi2_terms": chi2_terms,
-        "chi2_stat": chi2_stat,
-        "chi2_critical": truncate(chi2_critical),
-        "decision": "No se rechaza H0 (pasa la prueba)" if chi2_stat < chi2_critical else "Se rechaza H0 (no pasa la prueba)",
-        "classified_numbers": classified
+        "test_name": "Prueba de Poker",
+        "sample_size": n,
+        "categories": categories_data,
+        "totals": {
+            "Suma_Oi": suma_oi,
+            "Chi2_calculado": truncate(suma_chi2)
+        },
+        "critical_value": truncate(chi2_critical),
+        "decision": "No se rechaza H0 (pasa la prueba)" if suma_chi2 < chi2_critical else "Se rechaza H0 (no pasa la prueba)"
     }
 
-    return json.dumps(result, indent=4)
+    return json.dumps(result, indent=4, ensure_ascii=False)
 
 
+# Datos de prueba
 data = [
     0.12464, 0.61107, 0.56206, 0.79678, 0.06278,
     0.04791, 0.70251, 0.09538, 0.49120, 0.31151,
@@ -85,4 +101,3 @@ data = [
 ]
 
 print(poker_test_json(data))
-
