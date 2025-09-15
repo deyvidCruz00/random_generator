@@ -3,17 +3,26 @@ from modules.pruebas.dispatcher import ejecutar_pruebas
 
 app = Flask(__name__)
 
+@app.route("/")
+def index():
+    return render_template("pruebas.html")
+
 @app.route("/pruebas", methods=["POST"])
 def api_pruebas():
     data = request.get_json()
-    numeros = data.get("numeros", [])
+    datos = data.get("numeros", [])
     pruebas = data.get("pruebasSeleccionadas", {})
     alpha = data.get("alpha", 0.05)
 
-    resultados = ejecutar_pruebas(numeros, pruebas, alpha)
-
+    resultados = ejecutar_pruebas(datos, pruebas, alpha)
     return jsonify({
-        "n": len(numeros),
-        "alpha": alpha,
         "resultados": resultados
     })
+
+@app.route("/resultados")
+def api_resultados():
+    return render_template("results.html")
+
+
+if __name__ == "__main__":
+    app.run(debug=True)

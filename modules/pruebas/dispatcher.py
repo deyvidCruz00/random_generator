@@ -13,9 +13,13 @@ PRUEBAS_DISPONIBLES = {
     "poker": poker_test_json,
 }
 
-def ejecutar_pruebas(numeros, pruebas, alpha):
+def ejecutar_pruebas(datos, pruebas, alpha):
     resultados = {}
     for nombre, seleccionada in pruebas.items():
-        if seleccionada and nombre in PRUEBAS_DISPONIBLES:
-            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](numeros, alpha)
+        if nombre == "kolmogorov" and seleccionada and nombre in PRUEBAS_DISPONIBLES:
+            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, alpha=alpha)
+        elif nombre == "poker" and seleccionada and nombre in PRUEBAS_DISPONIBLES:
+            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos) 
+        elif seleccionada and nombre in PRUEBAS_DISPONIBLES:
+            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, alpha=alpha)
     return resultados

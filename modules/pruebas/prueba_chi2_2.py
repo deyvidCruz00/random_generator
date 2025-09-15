@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats as stats
 import json
 
-def prueba_chi_cuadrado(datos, k, alpha=0.05):
+def prueba_chi_cuadrado(datos, k=8, alpha=0.05):
     """
     Prueba Chi-cuadrado de uniformidad
     datos: lista o array de números pseudoaleatorios

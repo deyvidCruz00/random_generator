@@ -137,19 +137,18 @@
   <script>
     let charts = [];
 
+    const numeros = JSON.parse(sessionStorage.getItem("numerosGenerados"));
+    const resultados = JSON.parse(sessionStorage.getItem("resultadosPruebas"));
+
     const temaHibrido = {
       backgroundColor: 'rgba(30, 41, 55, 0.8)',
       gridColor: 'rgba(55, 65, 81, 0.6)',
       textColor: '#d1d5db',
       chartColor: '#06b6d4' // 🔹 siempre cian para las gráficas
     };
-
-    const resultados = [
-      { nombre: "Prueba de Medias", datos: [0.12, 0.55, 0.76, 0.34, 0.89, 0.45, 0.68], conclusion: "Los datos pasan la prueba de medias (p-valor > 0.05).", tipo: 'line' },
-      { nombre: "Prueba de Varianza", datos: [0.44, 0.25, 0.66, 0.77, 0.91, 0.33, 0.58], conclusion: "La varianza se encuentra dentro de los límites aceptables.", tipo: 'line' },
-      { nombre: "Prueba de Chi-cuadrado", datos: [15, 23, 18, 27, 21, 30, 12], conclusion: "Los datos se ajustan a una distribución uniforme (Chi² < valor crítico).", tipo: 'line' },
-      { nombre: "Distribución Normal", datos: [0.05, 0.15, 0.35, 0.65, 0.85, 0.45, 0.25], conclusion: "Los datos siguen una distribución aproximadamente normal.", tipo: 'line' }
-    ];
+   
+    console.log("Números Generados:", numeros);
+    console.log("Resultados de Pruebas:", resultados);
 
     function obtenerConfiguracionGrafico(prueba) {
       return {

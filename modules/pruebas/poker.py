@@ -6,13 +6,12 @@ def truncate(num, decimals=5):
     factor = 10 ** decimals
     return int(num * factor) / factor
 
-def poker_test_json(numbers):
+def poker_test_json(datos):
     """
     numbers: lista de números pseudoaleatorios
-    Retorna un JSON con la estructura similar a la tabla mostrada.
+    Retorna un JSON con la estructura de la prueba de póker.
     """
-
-    n = len(numbers)
+    n = len(datos)
 
     # Probabilidades teóricas
     probs = {
@@ -47,9 +46,12 @@ def poker_test_json(numbers):
 
     # Recuento de observados
     observed = {cat: 0 for cat in probs}
+    for num in datos:
+        cat = classify(num)
+        observed[cat] += 1
 
     # Esperados
-    expected = {cat: truncate(n * p) for cat, p in probs.items()}
+    expected = {cat: n * p for cat, p in probs.items()}
 
     # Estructura de datos similar a la tabla
     categories_data = []
@@ -62,7 +64,8 @@ def poker_test_json(numbers):
         ei = expected[cat]
         
         # Cálculo de (Oi-Ei)^2 / Ei solo si Ei > 0
-        chi2_component = truncate(((oi - ei)**2) / ei) if ei > 0 else 0
+        chi2_component = ((oi - ei)**2) / ei if ei > 0 else 0
+        chi2_component = truncate(chi2_component)
         
         categories_data.append({
             "Cat": cat,
@@ -80,7 +83,6 @@ def poker_test_json(numbers):
 
     result = {
         "test_name": "Prueba de Poker",
-        "sample_size": n,
         "categories": categories_data,
         "totals": {
             "Suma_Oi": suma_oi,
@@ -91,13 +93,3 @@ def poker_test_json(numbers):
     }
 
     return json.dumps(result, indent=4, ensure_ascii=False)
-
-
-# Datos de prueba
-data = [
-    0.12464, 0.61107, 0.56206, 0.79678, 0.06278,
-    0.04791, 0.70251, 0.09538, 0.49120, 0.31151,
-    0.83612, 0.61222, 0.68150, 0.52925, 0.95868
-]
-
-print(poker_test_json(data))

@@ -365,7 +365,6 @@
             if (importedNumbers.length > 0) {
                 numeros = numeros.concat(importedNumbers); // Añade los números nuevos a la lista existente
                 mostrarNumeros();
-                alert(`${importedNumbers.length} números han sido importados correctamente.`);
             } else {
                 alert('No se encontraron números válidos en el archivo CSV.');
             }
@@ -378,34 +377,6 @@
         };
 
         reader.readAsText(file);
-    }
-
-
-    function generarPruebas() {
-      const pruebasSeleccionadas = {
-        medias: document.getElementById("pruebaMedias").checked,
-        varianza: document.getElementById("pruebaVarianza").checked,
-        chi: document.getElementById("pruebaChi").checked,
-        kolmogorov: document.getElementById("pruebaKolmogorov").checked,
-        poker: document.getElementById("pruebaPoker").checked,
-        rachas: document.getElementById("pruebaRachas").checked
-      };
-
-      const alpha = parseFloat(document.getElementById("alphaInput").value);
-
-      if(numeros.length === 0){
-        alert("Debes agregar al menos un número antes de generar las pruebas.");
-        return;
-      }
-
-      const datos = {
-        numeros,
-        pruebasSeleccionadas,
-        alpha
-      };
-
-      console.log("Datos a enviar al backend:", datos);
-      alert("Se generarán las pruebas. Revisa la consola (F12) para ver los datos enviados.");
     }
 
     async function generarPruebas() {
@@ -448,13 +419,24 @@
 
             const resultado = await response.json();
             console.log("Resultados del backend:", resultado);
+            // Guardas los resultados en sessionStorage para la próxima página
+            sessionStorage.setItem("resultadosPruebas", JSON.stringify(resultado));
 
-            // Mostrar resultados en pantalla (ejemplo simple)
-            alert("Resultados recibidos: " + JSON.stringify(resultado));
+
         } catch (error) {
             console.error(error);
             alert("Ocurrió un error al ejecutar las pruebas.");
         }
+
+        
+        
+
+        // Guardas en sessionStorage
+        sessionStorage.setItem("numerosGenerados", JSON.stringify(numeros));
+
+        // Redirigir a la página de resultados
+        window.location.href = "/resultados"; 
+
     }
 
     
