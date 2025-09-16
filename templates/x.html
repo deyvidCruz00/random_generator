@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutorial: Recorrer JSON de Pruebas Estadísticas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .results {
+            background: #f8f9ff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            border-top: 4px solid #667eea;
+        }
+        
+        .test-title {
+            color: #333;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-title::before {
+            content: '📊';
+            font-size: 1.2em;
+        }
+        
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .param {
+            background: #f1f3ff;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .param-label {
+            font-weight: bold;
+            color: #555;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .param-value {
+            color: #333;
+            font-size: 1.1em;
+            margin-top: 4px;
+        }
+        
+        .decision {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            margin: 15px 0;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .decision.fail {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        th {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 0.5px;
+        }
+        
+        tr:hover {
+            background: #f8f9ff;
+        }
+        
+        .code-section {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow-x: auto;
+            border-left: 4px solid #667eea;
+        }
+        
+        .code-title {
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        code {
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .highlight {
+            background: rgba(102, 126, 234, 0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Tutorial: Análisis de JSON con JavaScript</h1>
+        
+        <div class="controls">
+            <button onclick="mostrarResumenGeneral()">📈 Resumen General</button>
+            <button onclick="mostrarPruebaChi()">🔢 Prueba Chi-Cuadrado</button>
+            <button onclick="mostrarPruebaKolmogorov()">📊 Prueba KS</button>
+            <button onclick="mostrarPruebaMedias()">📐 Prueba de Medias</button>
+            <button onclick="mostrarPruebaPoker()">🎲 Prueba de Póker</button>
+            <button onclick="mostrarPruebaVarianza()">📏 Prueba de Varianza</button>
+            <button onclick="mostrarEjemplosCodigo()">💻 Ejemplos de Código</button>
+        </div>
+        
+        <div id="results" class="results">
+            <p>Selecciona una opción para ver los resultados...</p>
+        </div>
+    </div>
+
+    <script>
+        // JSON de datos (simulando que viene de tu archivo)
+        const jsonData = {
+            "chi": {
+                "test_name": "Chi-Cuadrado",
+                "sample_size": 50,
+                "intervals": 8,
+                "significance_level": 0.05,
+                "degrees_freedom": 7,
+                "range": {
+                    "minimum": 0.00617,
+                    "maximum": 0.98369
+                },
+                "intervals_data": [
+                    {"no": 1, "inicio": 0.00617, "fin": 0.12836, "frecuencia_obt": 9, "frecuencia_esp": 6.25, "chi2": 1.21},
+                    {"no": 2, "inicio": 0.12836, "fin": 0.25055, "frecuencia_obt": 10, "frecuencia_esp": 6.25, "chi2": 2.25},
+                    {"no": 3, "inicio": 0.25055, "fin": 0.37274, "frecuencia_obt": 4, "frecuencia_esp": 6.25, "chi2": 0.81},
+                    {"no": 4, "inicio": 0.37274, "fin": 0.49493, "frecuencia_obt": 5, "frecuencia_esp": 6.25, "chi2": 0.25},
+                    {"no": 5, "inicio": 0.49493, "fin": 0.61712, "frecuencia_obt": 2, "frecuencia_esp": 6.25, "chi2": 2.89},
+                    {"no": 6, "inicio": 0.61712, "fin": 0.73931, "frecuencia_obt": 4, "frecuencia_esp": 6.25, "chi2": 0.81},
+                    {"no": 7, "inicio": 0.73931, "fin": 0.8615, "frecuencia_obt": 6, "frecuencia_esp": 6.25, "chi2": 0.01},
+                    {"no": 8, "inicio": 0.8615, "fin": 0.98369, "frecuencia_obt": 10, "frecuencia_esp": 6.25, "chi2": 2.25}
+                ],
+                "totales": {
+                    "frecuencia_obt_total": 50,
+                    "frecuencia_esp_total": 50,
+                    "chi2_total": 10.48,
+                    "chi2_critico": 14.0671,
+                    "pasa_prueba": true
+                },
+                "decision": "No se rechaza H0 (pasa la prueba)"
+            },
+            "kolmogorov": {
+                "test_name": "Prueba KS",
+                "intervals": 10,
+                "range": {
+                    "minimum": 0.00617,
+                    "maximum": 0.98369,
+                    "amplitude": 0.09775
+                },
+                "intervals_data": [
+                    {"no": 1, "inicial": 0.00617, "final": 0.10392, "frec_obt": 5, "f_obt_acum": 5, "p_obt": 0.1, "f_esp_acum": 5, "p_esp_acum": 0.1, "dif": 0.0},
+                    {"no": 2, "inicial": 0.10392, "final": 0.20167, "frec_obt": 8, "f_obt_acum": 13, "p_obt": 0.26, "f_esp_acum": 10, "p_esp_acum": 0.2, "dif": 0.06}
+                ],
+                "statistics": {
+                    "max_difference": 0.1,
+                    "critical_value": 0.192,
+                    "decision": "Pasa la prueba"
+                }
+            },
+            "medias": {
+                "test_name": "Prueba de Medias",
+                "n": 50,
+                "alpha": 0.05,
+                "mu_esperada": 0.5,
+                "media_muestra": 0.4831232,
+                "decision": "No se rechaza H0 (la media esperada coincide con la muestral)"
+            },
+            "poker": {
+                "test_name": "Prueba de Póker",
+                "categories": [
+                    {"categoria": "D", "Oi": 21, "Prob": 0.3024, "Ei": 15.12, "chi2": 2.28666},
+                    {"categoria": "O", "Oi": 20, "Prob": 0.504, "Ei": 25.2, "chi2": 1.07301}
+                ],
+                "critical_value": 12.5916,
+                "decision": "No se rechaza H0 (pasa la prueba)"
+            },
+            "varianza": {
+                "test_name": "Prueba de Varianza",
+                "n": 50,
+                "alpha": 0.05,
+                "varianza_muestral": 0.10809630831200001,
+                "decision": "Pasa la prueba de varianza"
+            }
+        };
+
+        function mostrarResumenGeneral() {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="test-section fade-in">
+                    <h2 class="test-title">Resumen General de Pruebas Estadísticas</h2>
+                    <div class="param-grid">
+            `;
+            
+            // Recorrer todas las pruebas
+            Object.keys(jsonData).forEach(pruebaKey => {
+                const prueba = jsonData[pruebaKey];
+                const decision = prueba.decision || 'No especificada';
+                const pasaPrueba = decision.toLowerCase().includes('pasa') || 
+                                 decision.toLowerCase().includes('no se rechaza');
+                
+                html += `
+                    <div class="param">
+                        <div class="param-label">${prueba.test_name}</div>
+                        <div class="param-value">
+                            <div class="decision ${pasaPrueba ? '' : 'fail'}">
+                                ${decision}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `</div></div>`;
+            resultsDiv.innerHTML = html;
+        }
+
+        function mostrarPruebaChi() {
+            const chi = jsonData.chi;
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="test-section fade-in">
+                    <h2 class="test-title">${chi.test_name}</h2>
+                    
+                    <div class="param-grid">
+                        <div class="param">
+                            <div class="param-label">Tamaño de Muestra</div>
+                            <div class="param-value">${chi.sample_size}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Intervalos</div>
+                            <div class="param-value">${chi.intervals}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Nivel de Significancia</div>
+                            <div class="param-value">${chi.significance_level}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Grados de Libertad</div>
+                            <div class="param-value">${chi.degrees_freedom}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Chi² Calculado</div>
+                            <div class="param-value">${chi.totales.chi2_total}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Chi² Crítico</div>
+                            <div class="param-value">${chi.totales.chi2_critico}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="decision ${chi.totales.pasa_prueba ? '' : 'fail'}">
+                        ${chi.decision}
+                    </div>
+                    
+                    <h3>Datos por Intervalos</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Intervalo</th>
+                                <th>Inicio</th>
+                                <th>Fin</th>
+                                <th>Frec. Observada</th>
+                                <th>Frec. Esperada</th>
+                                <th>Chi²</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            chi.intervals_data.forEach(intervalo => {
+                html += `
+                    <tr>
+                        <td>${intervalo.no}</td>
+                        <td>${intervalo.inicio.toFixed(5)}</td>
+                        <td>${intervalo.fin.toFixed(5)}</td>
+                        <td>${intervalo.frecuencia_obt}</td>
+                        <td>${intervalo.frecuencia_esp}</td>
+                        <td>${intervalo.chi2}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function mostrarPruebaKolmogorov() {
+            const ks = jsonData.kolmogorov;
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="test-section fade-in">
+                    <h2 class="test-title">${ks.test_name}</h2>
+                    
+                    <div class="param-grid">
+                        <div class="param">
+                            <div class="param-label">Intervalos</div>
+                            <div class="param-value">${ks.intervals}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Diferencia Máxima</div>
+                            <div class="param-value">${ks.statistics.max_difference}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Valor Crítico</div>
+                            <div class="param-value">${ks.statistics.critical_value}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Amplitud</div>
+                            <div class="param-value">${ks.range.amplitude}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="decision">
+                        ${ks.statistics.decision}
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function mostrarPruebaMedias() {
+            const medias = jsonData.medias;
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="test-section fade-in">
+                    <h2 class="test-title">${medias.test_name}</h2>
+                    
+                    <div class="param-grid">
+                        <div class="param">
+                            <div class="param-label">Tamaño de Muestra (n)</div>
+                            <div class="param-value">${medias.n}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Nivel Alpha</div>
+                            <div class="param-value">${medias.alpha}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Media Esperada</div>
+                            <div class="param-value">${medias.mu_esperada}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Media de la Muestra</div>
+                            <div class="param-value">${medias.media_muestra.toFixed(6)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="decision">
+                        ${medias.decision}
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function mostrarPruebaPoker() {
+            const poker = jsonData.poker;
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="test-section fade-in">
+                    <h2 class="test-title">${poker.test_name}</h2>
+                    
+                    <div class="param-grid">
+                        <div class="param">
+                            <div class="param-label">Valor Crítico</div>
+                            <div class="param-value">${poker.critical_value}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="decision">
+                        ${poker.decision}
+                    </div>
+                    
+                    <h3>Categorías</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Categoría</th>
+                                <th>Observado (Oi)</th>
+                                <th>Probabilidad</th>
+                                <th>Esperado (Ei)</th>
+                                <th>Chi²</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            poker.categories.forEach(categoria => {
+                html += `
+                    <tr>
+                        <td>${categoria.categoria}</td>
+                        <td>${categoria.Oi}</td>
+                        <td>${categoria.Prob.toFixed(4)}</td>
+                        <td>${categoria.Ei.toFixed(2)}</td>
+                        <td>${categoria.chi2.toFixed(5)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function mostrarPruebaVarianza() {
+            const varianza = jsonData.varianza;
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="test-section fade-in">
+                    <h2 class="test-title">${varianza.test_name}</h2>
+                    
+                    <div class="param-grid">
+                        <div class="param">
+                            <div class="param-label">Tamaño de Muestra (n)</div>
+                            <div class="param-value">${varianza.n}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Nivel Alpha</div>
+                            <div class="param-value">${varianza.alpha}</div>
+                        </div>
+                        <div class="param">
+                            <div class="param-label">Varianza Muestral</div>
+                            <div class="param-value">${varianza.varianza_muestral.toFixed(6)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="decision">
+                        ${varianza.decision}
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function mostrarEjemplosCodigo() {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <div class="test-section fade-in">
+                    <h2 class="test-title">💻 Ejemplos de Código JavaScript</h2>
+                    
+                    <div class="code-section">
+                        <div class="code-title">1. Acceder a propiedades básicas:</div>
+                        <code>// Obtener el nombre de una prueba
+const nombrePruebaChi = jsonData.chi.test_name;
+console.log(nombrePruebaChi); // "Chi-Cuadrado"
+
+// Obtener si pasa la prueba
+const pasaPrueba = jsonData.chi.totales.pasa_prueba;
+console.log(pasaPrueba); // true</code>
+                    </div>
+                    
+                    <div class="code-section">
+                        <div class="code-title">2. Recorrer arrays de datos:</div>
+                        <code>// Recorrer intervalos de Chi-Cuadrado
+jsonData.chi.intervals_data.forEach(intervalo => {
+    console.log(\`Intervalo \${intervalo.no}: \${intervalo.frecuencia_obt} observada\`);
+});
+
+// Usar map para crear nuevo array
+const frecuenciasObservadas = jsonData.chi.intervals_data.map(item => item.frecuencia_obt);
+console.log(frecuenciasObservadas); // [9, 10, 4, 5, 2, 4, 6, 10]</code>
+                    </div>
+                    
+                    <div class="code-section">
+                        <div class="code-title">3. Recorrer todas las pruebas:</div>
+                        <code>// Obtener todas las decisiones
+Object.keys(jsonData).forEach(pruebaKey => {
+    const prueba = jsonData[pruebaKey];
+    console.log(\`\${prueba.test_name}: \${prueba.decision}\`);
+});
+
+// Filtrar pruebas que pasan
+const pruebasQuePasan = Object.keys(jsonData).filter(key => {
+    const decision = jsonData[key].decision;
+    return decision.includes('pasa') || decision.includes('No se rechaza');
+});</code>
+                    </div>
+                    
+                    <div class="code-section">
+                        <div class="code-title">4. Crear elementos HTML dinámicamente:</div>
+                        <code>// Crear una tabla de intervalos
+function crearTablaIntervalos(datos) {
+    let html = '<table><thead><tr>';
+    html += '<th>Intervalo</th><th>Inicio</th><th>Fin</th>';
+    html += '<th>Freq. Obs.</th><th>Freq. Esp.</th>';
+    html += '</tr></thead><tbody>';
+    
+    datos.forEach(intervalo => {
+        html += \`<tr>
+            <td>\${intervalo.no}</td>
+            <td>\${intervalo.inicio.toFixed(5)}</td>
+            <td>\${intervalo.fin.toFixed(5)}</td>
+            <td>\${intervalo.frecuencia_obt}</td>
+            <td>\${intervalo.frecuencia_esp}</td>
+        </tr>\`;
+    });
+    
+    html += '</tbody></table>';
+    return html;
+}</code>
+                    </div>
+                    
+                    <div class="code-section">
+                        <div class="code-title">5. Validación y manejo de errores:</div>
+                        <code>// Verificar si existe una propiedad antes de usarla
+function obtenerDecision(nombrePrueba) {
+    if (jsonData[nombrePrueba] && jsonData[nombrePrueba].decision) {
+        return jsonData[nombrePrueba].decision;
+    }
+    return 'Decisión no disponible';
+}
+
+// Uso seguro de propiedades anidadas
+const valorCritico = jsonData.chi?.totales?.chi2_critico ?? 'No disponible';
+
+// Validar arrays antes de recorrerlos
+if (Array.isArray(jsonData.chi.intervals_data)) {
+    jsonData.chi.intervals_data.forEach(item => {
+        // Procesar cada item
+    });
+}</code>
+                    </div>
+                    
+                    <div class="code-section">
+                        <div class="code-title">6. Insertar en el DOM:</div>
+                        <code>// Insertar contenido en un elemento específico
+function mostrarResultados(pruebaKey) {
+    const container = document.getElementById('results');
+    const prueba = jsonData[pruebaKey];
+    
+    container.innerHTML = \`
+        <h3>\${prueba.test_name}</h3>
+        <p><strong>Decisión:</strong> \${prueba.decision}</p>
+    \`;
+}
+
+// Agregar contenido sin reemplazar
+function agregarResultado(texto) {
+    const container = document.getElementById('results');
+    const nuevoElemento = document.createElement('div');
+    nuevoElemento.innerHTML = texto;
+    container.appendChild(nuevoElemento);
+}</code>
+                    </div>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        // Mostrar resumen al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            mostrarResumenGeneral();
+        });
+    </script>
+</body>
+</html>

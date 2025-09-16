@@ -1,12 +1,13 @@
 import json
 from collections import Counter
+import scipy.stats as stats
 
 def truncate(num, decimals=5):
     """Trunca un número a 'decimals' decimales"""
     factor = 10 ** decimals
     return int(num * factor) / factor
 
-def poker_test_json(datos):
+def poker_test_json(datos, alpha=0.05):
     """
     numbers: lista de números pseudoaleatorios
     Retorna un JSON con la estructura de la prueba de póker.
@@ -79,17 +80,17 @@ def poker_test_json(datos):
         suma_chi2 += chi2_component
 
     # Valor crítico (gl = categorias-1 = 6, alfa=0.05 → 12.59 aprox.)
-    chi2_critical = 12.5916
+    chi2_critical = stats.chi2.ppf(1 - alpha, 6)
 
     result = {
         "test_name": "Prueba de Poker",
-        "categories": categories_data,
-        "totals": {
+        "intervals_data": categories_data,
+        "statistics": {
             "Suma_Oi": suma_oi,
-            "Chi2_calculado": truncate(suma_chi2)
-        },
-        "critical_value": truncate(chi2_critical),
-        "decision": "No se rechaza H0 (pasa la prueba)" if suma_chi2 < chi2_critical else "Se rechaza H0 (no pasa la prueba)"
+            "Chi2_calculado": truncate(suma_chi2),
+            "critical_value": truncate(chi2_critical)
+        },      
+        "decision": "No se rechaza H0 (pasa la prueba)" if suma_chi2 <= chi2_critical else "Se rechaza H0 (no pasa la prueba)"
     }
 
     return json.dumps(result, indent=4, ensure_ascii=False)

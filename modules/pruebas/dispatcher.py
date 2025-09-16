@@ -18,8 +18,8 @@ def ejecutar_pruebas(datos, pruebas, alpha):
     for nombre, seleccionada in pruebas.items():
         if nombre == "kolmogorov" and seleccionada and nombre in PRUEBAS_DISPONIBLES:
             resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, alpha=alpha)
-        elif nombre == "poker" and seleccionada and nombre in PRUEBAS_DISPONIBLES:
-            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos) 
+        elif nombre == "chi" and seleccionada and nombre in PRUEBAS_DISPONIBLES:
+            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, alpha=alpha) 
         elif seleccionada and nombre in PRUEBAS_DISPONIBLES:
             resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, alpha=alpha)
     return resultados

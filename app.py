@@ -15,9 +15,7 @@ def api_pruebas():
     alpha = data.get("alpha", 0.05)
 
     resultados = ejecutar_pruebas(datos, pruebas, alpha)
-    return jsonify({
-        "resultados": resultados
-    })
+    return jsonify(resultados)
 
 @app.route("/resultados")
 def api_resultados():

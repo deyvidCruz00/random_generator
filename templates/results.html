@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <title>Resultados de Pruebas | Tema Híbrido Mejorado</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono&display=swap"
+    rel="stylesheet">
   <style>
     :root {
-      --primary-color: #22c55e;   /* verde matriz → títulos y botón */
+      --primary-color: #22c55e;
+      /* verde matriz → títulos y botón */
       --secondary-color: #0f172a;
-      --accent-color: #06b6d4;    /* cian brillante → subtítulos */
+      --accent-color: #06b6d4;
+      /* cian brillante → subtítulos */
       --background-color: #0a0a0a;
       --text-color: #e2e8f0;
       --text-muted: #94a3b8;
@@ -19,7 +23,8 @@
       --chart-bg-color: #1e2937;
       --chart-grid-color: #374151;
       --chart-text-color: #d1d5db;
-      --chart-primary-color: #06b6d4; /* 🔹 gráficos solo en cian */
+      --chart-primary-color: #06b6d4;
+      /* 🔹 gráficos solo en cian */
     }
 
     body {
@@ -34,7 +39,8 @@
       font-family: 'Roboto Mono', monospace;
       font-size: 2.8em;
       font-weight: 600;
-      color: var(--primary-color); /* verde */
+      color: var(--primary-color);
+      /* verde */
       text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
     }
 
@@ -68,17 +74,18 @@
       margin-bottom: 15px;
       font-size: 20px;
       font-family: 'Roboto Mono', monospace;
-      color: var(--accent-color); /* cian brillante */
+      color: var(--accent-color);
+      /* cian brillante */
     }
-    
+
     .prueba-card p {
-        font-family: 'Roboto Mono', monospace;
-        color: var(--text-muted);
-        background: #020617;
-        padding: 10px;
-        border-radius: 6px;
-        word-wrap: break-word;
-        font-size: 14px;
+      font-family: 'Roboto Mono', monospace;
+      color: var(--text-muted);
+      background: #020617;
+      padding: 10px;
+      border-radius: 6px;
+      word-wrap: break-word;
+      font-size: 14px;
     }
 
     .chart-container {
@@ -99,7 +106,8 @@
       margin-top: 15px;
       padding: 8px 16px;
       background: transparent;
-      color: var(--primary-color); /* verde */
+      color: var(--primary-color);
+      /* verde */
       border: 1px solid var(--primary-color);
       border-radius: 6px;
       cursor: pointer;
@@ -109,7 +117,8 @@
     }
 
     .export-btn:hover {
-      background: var(--primary-color); /* verde */
+      background: var(--primary-color);
+      /* verde */
       color: var(--background-color);
       box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
     }
@@ -124,6 +133,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h1>> Resultados de las Pruebas</h1>
@@ -144,43 +154,415 @@
       backgroundColor: 'rgba(30, 41, 55, 0.8)',
       gridColor: 'rgba(55, 65, 81, 0.6)',
       textColor: '#d1d5db',
-      chartColor: '#06b6d4' // 🔹 siempre cian para las gráficas
+      chartColor: '#06b6d4', // siempre cian para las gráficas
+      successColor: '#10b981', // verde para valores dentro del rango
+      warningColor: '#f59e0b', // amarillo para valores límite
+      errorColor: '#ef4444'    // rojo para valores fuera del rango
     };
-   
-    console.log("Números Generados:", numeros);
+
     console.log("Resultados de Pruebas:", resultados);
 
-    function obtenerConfiguracionGrafico(prueba) {
+    // Función para generar datos de distribución normal
+    function generarDistribucionNormal(media, desviacion, puntos = 100) {
+      const datos = [];
+      const rango = 4 * desviacion; // 4 desviaciones estándar a cada lado
+      const inicio = media - rango;
+      const fin = media + rango;
+      const paso = (fin - inicio) / puntos;
+
+      for (let i = 0; i <= puntos; i++) {
+        const x = inicio + (i * paso);
+        const y = (1 / (desviacion * Math.sqrt(2 * Math.PI))) *
+          Math.exp(-0.5 * Math.pow((x - media) / desviacion, 2));
+        datos.push({ x: x, y: y });
+      }
+
+      return datos;
+    }
+
+    // Función para calcular la desviación estándar de la media muestral
+    function calcularDesviacionEstandarMedia(varianza, n) {
+      return Math.sqrt(varianza / n);
+    }
+
+    // Configuración para la prueba de medias
+    function obtenerConfiguracionMedias(prueba) {
+      const varianza = 1 / 12; // Para distribución uniforme [0,1], la varianza teórica es 1/12
+      const desviacionEstandar = calcularDesviacionEstandarMedia(varianza, prueba.n);
+      const datosNormal = generarDistribucionNormal(prueba.media_muestra, desviacionEstandar);
+
+      // Crear datos para el área de aceptación (entre límites)
+      const datosAreaAceptacion = datosNormal.filter(punto =>
+        punto.x >= prueba.limite_inferior && punto.x <= prueba.limite_superior
+      );
+
+      // Agregar puntos en los límites exactos para cerrar el área
+      const puntoInferior = {
+        x: prueba.limite_inferior,
+        y: datosNormal.find(p => Math.abs(p.x - prueba.limite_inferior) < 0.01)?.y || 0
+      };
+      const puntoSuperior = {
+        x: prueba.limite_superior,
+        y: datosNormal.find(p => Math.abs(p.x - prueba.limite_superior) < 0.01)?.y || 0
+      };
+
+      // Ordenar y completar el área
+      const areaCompleta = [
+        { x: prueba.limite_inferior, y: 0 },
+        puntoInferior,
+        ...datosAreaAceptacion,
+        puntoSuperior,
+        { x: prueba.limite_superior, y: 0 }
+      ];
+
       return {
-        type: prueba.tipo,
+        type: 'line',
         data: {
-          labels: prueba.datos.map((_, i) => `Dato ${i + 1}`),
-          datasets: [{
-            label: 'Valores',
-            data: prueba.datos,
-            borderColor: temaHibrido.chartColor,
-            backgroundColor: temaHibrido.chartColor + '40',
-            fill: false,
-            tension: 0.3,
-            pointBackgroundColor: temaHibrido.chartColor,
-            pointBorderColor: '#0a0a0a',
-            pointHoverRadius: 7,
-            pointRadius: 5,
-            borderWidth: 2
-          }]
+          datasets: [
+            {
+              label: 'Región de aceptación (95%)',
+              data: areaCompleta,
+              borderColor: 'rgba(16, 185, 129, 0.8)',
+              backgroundColor: 'rgba(16, 185, 129, 0.3)',
+              fill: true,
+              tension: 0.4,
+              pointRadius: 0,
+              borderWidth: 1
+            },
+            {
+              label: 'Distribución Normal Aproximada',
+              data: datosNormal,
+              borderColor: '#ef4444',
+              backgroundColor: 'transparent',
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              borderWidth: 3
+            },
+            {
+              label: `LI = ${prueba.limite_inferior.toFixed(3)}`,
+              data: [{ x: prueba.limite_inferior, y: 0 }, { x: prueba.limite_inferior, y: Math.max(...datosNormal.map(d => d.y)) }],
+              borderColor: temaHibrido.successColor,
+              borderWidth: 2,
+              borderDash: [8, 4],
+              pointRadius: 0,
+              showLine: true,
+              fill: false
+            },
+            {
+              label: `LS = ${prueba.limite_superior.toFixed(3)}`,
+              data: [{ x: prueba.limite_superior, y: 0 }, { x: prueba.limite_superior, y: Math.max(...datosNormal.map(d => d.y)) }],
+              borderColor: temaHibrido.successColor,
+              borderWidth: 2,
+              borderDash: [8, 4],
+              pointRadius: 0,
+              showLine: true,
+              fill: false
+            },
+            {
+              label: `Media muestral = ${prueba.media_muestra.toFixed(3)}`,
+              data: [{ x: prueba.media_muestra, y: 0 }, { x: prueba.media_muestra, y: Math.max(...datosNormal.map(d => d.y)) }],
+              borderColor: temaHibrido.textColor,
+              backgroundColor: temaHibrido.textColor,
+              borderWidth: 3,
+              borderDash: [4, 2],
+              pointRadius: 0,
+              showLine: true,
+              fill: false
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { display: false }
+            legend: {
+              display: true,
+              labels: {
+                color: temaHibrido.textColor,
+                usePointStyle: true,
+                generateLabels: function (chart) {
+                  const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                  const labels = original.call(this, chart);
+
+                  // Personalizar los estilos de la leyenda
+                  labels.forEach(label => {
+                    if (label.text.includes('Región de aceptación')) {
+                      label.fillStyle = 'rgba(16, 185, 129, 0.6)';
+                      label.strokeStyle = 'rgba(16, 185, 129, 0.8)';
+                    } else if (label.text.includes('Distribución Normal')) {
+                      label.strokeStyle = '#ef4444';
+                      label.fillStyle = '#ef4444';
+                    } else if (label.text.includes('LI') || label.text.includes('LS')) {
+                      label.strokeStyle = temaHibrido.successColor;
+                      label.fillStyle = temaHibrido.successColor;
+                      label.lineDash = [8, 4];
+                    } else if (label.text.includes('Media muestral')) {
+                      label.strokeStyle = temaHibrido.textColor;
+                      label.fillStyle = temaHibrido.textColor;
+                      label.lineDash = [4, 2];
+                    }
+                  });
+                  return labels;
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: `Prueba de Medias - Intervalo de Confianza 95%`,
+              color: temaHibrido.textColor,
+              font: { size: 16, weight: 'bold' }
+            },
+            tooltip: {
+              enabled: false
+            }
           },
           scales: {
             x: {
+              type: 'linear',
+              title: {
+                display: true,
+                text: 'Valores de la media',
+                color: temaHibrido.textColor,
+                font: { size: 14 }
+              },
+              grid: { color: temaHibrido.gridColor },
+              ticks: {
+                color: temaHibrido.textColor,
+                callback: function (value) {
+                  return value.toFixed(2);
+                }
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Densidad de probabilidad',
+                color: temaHibrido.textColor,
+                font: { size: 14 }
+              },
+              grid: { color: temaHibrido.gridColor },
+              ticks: {
+                color: temaHibrido.textColor,
+                callback: function (value) {
+                  return value.toFixed(1);
+                }
+              }
+            }
+          },
+          interaction: {
+            intersect: false,
+            mode: 'index'
+          }
+        }
+      };
+    }
+
+    // Configuración para la prueba de Kolmogorov-Smirnov
+    function obtenerConfiguracionKolmogorov(prueba) {
+      // Extraer datos de los intervalos
+      const etiquetas = prueba.intervals_data.map(intervalo =>
+        `[${intervalo.Inicial.toFixed(3)}, ${intervalo.Final.toFixed(3)})`
+      );
+
+      const probabilidadesObtenidas = prueba.intervals_data.map(intervalo => intervalo.P_Obt);
+      const probabilidadesEsperadas = prueba.intervals_data.map(intervalo => intervalo.P_Esp_A);
+
+      return {
+        type: 'bar',
+        data: {
+          labels: etiquetas,
+          datasets: [
+            {
+              label: 'Probabilidad Esperada Acumulada',
+              data: probabilidadesEsperadas,
+              backgroundColor: 'rgba(6, 182, 212, 0.7)',
+              borderColor: '#06b6d4',
+              borderWidth: 2,
+              order: 2
+            },
+            {
+              label: 'Probabilidad Obtenida Acumulada',
+              data: probabilidadesObtenidas,
+              backgroundColor: 'rgba(16, 185, 129, 0.7)',
+              borderColor: '#10b981',
+              borderWidth: 2,
+              order: 1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                color: temaHibrido.textColor,
+                usePointStyle: true
+              }
+            },
+            title: {
+              display: true,
+              text: `Prueba Kolmogorov-Smirnov - D_máx = ${prueba.statistics.max_difference} (Crítico: ${prueba.statistics.critical_value})`,
+              color: temaHibrido.textColor,
+              font: { size: 16, weight: 'bold' }
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(30, 41, 55, 0.9)',
+              titleColor: temaHibrido.textColor,
+              bodyColor: temaHibrido.textColor,
+              borderColor: temaHibrido.chartColor,
+              borderWidth: 1,
+              callbacks: {
+                title: function (context) {
+                  return `Intervalo: ${context[0].label}`;
+                },
+                label: function (context) {
+                  const datasetLabel = context.dataset.label;
+                  const value = context.parsed.y;
+                  return `${datasetLabel}: ${value.toFixed(4)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Intervalos',
+                color: temaHibrido.textColor,
+                font: { size: 14 }
+              },
+              grid: { color: temaHibrido.gridColor },
+              ticks: {
+                color: temaHibrido.textColor,
+                maxRotation: 45,
+                font: { size: 10 }
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Probabilidad Acumulada',
+                color: temaHibrido.textColor,
+                font: { size: 14 }
+              },
+              grid: { color: temaHibrido.gridColor },
+              ticks: {
+                color: temaHibrido.textColor,
+                callback: function (value) {
+                  return value.toFixed(2);
+                }
+              },
+              min: 0,
+              max: 1.1
+            }
+          },
+          interaction: {
+            intersect: false,
+            mode: 'index'
+          },
+          hover: {
+            mode: 'index',
+            intersect: false
+          }
+        }
+      };
+    }
+
+    // Configuración para la prueba de varianza
+    function obtenerConfiguracionVarianza(prueba) {
+      // Para la prueba de varianza usamos distribución Chi-cuadrado
+      const gl = numeros.length - 1; // grados de libertad
+      const datosChiCuadrado = generarDistribucionChiCuadrado(gl);
+
+      return {
+        type: 'line',
+        data: {
+          datasets: [
+            {
+              label: 'Distribución χ² teórica',
+              data: datosChiCuadrado,
+              borderColor: temaHibrido.chartColor,
+              backgroundColor: 'transparent',
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0,
+              borderWidth: 3
+            },
+            {
+              label: 'Valor Calculado',
+              data: [
+                { x: (prueba.n - 1) * prueba.varianza_muestral / (1 / 12), y: 0 },
+                { x: (prueba.n - 1) * prueba.varianza_muestral / (1 / 12), y: 0.1 }
+              ],
+              borderColor: temaHibrido.successColor,
+              backgroundColor: temaHibrido.successColor,
+              borderWidth: 4,
+              pointRadius: 8,
+              pointBackgroundColor: temaHibrido.successColor,
+              showLine: true,
+              fill: false
+            },
+            {
+              label: 'Límite Inferior (χ₁²)',
+              data: [{ x: prueba.Xi1, y: 0 }, { x: prueba.Xi1, y: 0.08 }],
+              borderColor: temaHibrido.warningColor,
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              showLine: true,
+              fill: false
+            },
+            {
+              label: 'Límite Superior (χ₂²)',
+              data: [{ x: prueba.Xi2, y: 0 }, { x: prueba.Xi2, y: 0.08 }],
+              borderColor: temaHibrido.warningColor,
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              showLine: true,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            tooltip: {
+              enabled: false
+            },
+            legend: {
+              display: true,
+              labels: { color: temaHibrido.textColor }
+            },
+            title: {
+              display: true,
+              text: `Prueba de Varianza: σ² = ${prueba.varianza_muestral.toFixed(4)} (gl = ${gl})`,
+              color: temaHibrido.textColor,
+              font: { size: 14 }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              title: {
+                display: true,
+                text: 'Valor χ²',
+                color: temaHibrido.textColor
+              },
               grid: { color: temaHibrido.gridColor },
               ticks: { color: temaHibrido.textColor }
             },
             y: {
+              title: {
+                display: true,
+                text: 'Densidad de Probabilidad',
+                color: temaHibrido.textColor
+              },
               grid: { color: temaHibrido.gridColor },
               ticks: { color: temaHibrido.textColor }
             }
@@ -189,53 +571,124 @@
       };
     }
 
+    // Función para generar distribución Chi-cuadrado aproximada
+    function generarDistribucionChiCuadrado(gl, puntos = 100) {
+      const datos = [];
+      const max = Math.max(100, gl * 3); // rango adaptativo
+      const paso = max / puntos;
+
+      for (let i = 0.1; i <= max; i += paso) {
+        // Aproximación de la densidad Chi-cuadrado
+        const y = (Math.pow(i, gl / 2 - 1) * Math.exp(-i / 2)) /
+          (Math.pow(2, gl / 2) * gamma(gl / 2));
+        datos.push({ x: i, y: y });
+      }
+
+      return datos;
+    }
+
+    // Aproximación de la función Gamma para valores pequeños
+    function gamma(z) {
+      if (z === 0.5) return Math.sqrt(Math.PI);
+      if (z === 1) return 1;
+      if (z === 1.5) return Math.sqrt(Math.PI) / 2;
+      if (z === 2) return 1;
+      // Para otros valores, usar aproximación de Stirling
+      return Math.sqrt(2 * Math.PI / z) * Math.pow(z / Math.E, z);
+    }
+
+    // Función principal para obtener configuración según el tipo de prueba
+    function obtenerConfiguracionGrafico(prueba) {
+      switch (prueba.test_name) {
+        case "Prueba de Medias":
+          return obtenerConfiguracionMedias(prueba);
+        case "Prueba KS":
+          return obtenerConfiguracionKolmogorov(prueba);
+        case "Prueba de Varianza":
+          return obtenerConfiguracionVarianza(prueba);
+        // Aquí agregaremos las demás pruebas después
+        default:
+          return null;
+      }
+    }
+
     function renderResultados() {
       const contenedor = document.getElementById("pruebasResultados");
       contenedor.innerHTML = '';
       charts = [];
 
-      resultados.forEach((prueba, index) => {
+      Object.keys(resultados).forEach(pruebaKey => {
+        const prueba = JSON.parse(resultados[pruebaKey]);
         const card = document.createElement("div");
         card.className = "prueba-card";
 
         const title = document.createElement("h2");
-        title.textContent = `// ${prueba.nombre}`;
+        title.textContent = `// ${prueba.test_name}`;
         card.appendChild(title);
 
         const resumen = document.createElement("p");
-        resumen.textContent = "→ " + prueba.conclusion;
+        resumen.textContent = "→ " + prueba.decision;
+        resumen.style.color = prueba.decision.includes("pasa") ||
+          prueba.decision.includes("No se rechaza") ?
+          temaHibrido.successColor : temaHibrido.errorColor;
         card.appendChild(resumen);
 
         const chartContainer = document.createElement("div");
         chartContainer.className = "chart-container";
-        
+        chartContainer.style.height = "400px";
+
         const canvas = document.createElement("canvas");
-        canvas.id = "chart" + index;
         chartContainer.appendChild(canvas);
         card.appendChild(chartContainer);
 
+        // Agregar información estadística detallada
         const stats = document.createElement("div");
         stats.className = "stats-info";
-        const promedio = (prueba.datos.reduce((a, b) => a + b, 0) / prueba.datos.length).toFixed(3);
-        const max = Math.max(...prueba.datos).toFixed(3);
-        const min = Math.min(...prueba.datos).toFixed(3);
-        stats.innerHTML = `
-          <span>Promedio: ${promedio}</span>
-          <span>Máx: ${max}</span>
-          <span>Mín: ${min}</span>
-        `;
+
+        if (prueba.test_name === "Prueba de Medias") {
+          stats.innerHTML = `
+        <div class="stat-item"><strong>n:</strong> ${prueba.n}</div>
+        <div class="stat-item"><strong>Media esperada (μ₀):</strong> ${prueba.mu_esperada}</div>
+        <div class="stat-item"><strong>Media muestral (x̄):</strong> ${prueba.media_muestra.toFixed(6)}</div>
+        <div class="stat-item"><strong>Estadístico Z:</strong> ${prueba.z.toFixed(4)}</div>
+        <div class="stat-item"><strong>Error estándar:</strong> ${prueba.error.toFixed(6)}</div>
+        <div class="stat-item"><strong>Intervalo de confianza:</strong> [${prueba.limite_inferior.toFixed(4)}, ${prueba.limite_superior.toFixed(4)}]</div>
+      `;
+        } else if (prueba.test_name === "Prueba de Varianza") {
+          stats.innerHTML = `
+        <div class="stat-item"><strong>n:</strong> ${prueba.n}</div>
+        <div class="stat-item"><strong>Varianza muestral:</strong> ${prueba.varianza_muestral.toFixed(6)}</div>
+        <div class="stat-item"><strong>χ₁² (límite inferior):</strong> ${prueba.Xi1.toFixed(4)}</div>
+        <div class="stat-item"><strong>χ₂² (límite superior):</strong> ${prueba.Xi2.toFixed(4)}</div>
+        <div class="stat-item"><strong>Intervalo de confianza para σ²:</strong> [${prueba.limite_inferior.toFixed(6)}, ${prueba.limite_superior.toFixed(6)}]</div>
+      `;
+        } else if (prueba.test_name === "Prueba KS") {
+          stats.innerHTML = `
+        <div class="stat-item"><strong>Número de intervalos:</strong> ${prueba.intervals}</div>
+        <div class="stat-item"><strong>Rango:</strong> [${prueba.range.minimum.toFixed(5)}, ${prueba.range.maximum.toFixed(5)}]</div>
+        <div class="stat-item"><strong>Amplitud por intervalo:</strong> ${prueba.range.amplitude.toFixed(5)}</div>
+        <div class="stat-item"><strong>Diferencia máxima (D):</strong> ${prueba.statistics.max_difference}</div>
+        <div class="stat-item"><strong>Valor crítico:</strong> ${prueba.statistics.critical_value}</div>
+        <div class="stat-item"><strong>Resultado:</strong> D < D_crítico → ${prueba.decision}</div>
+      `;
+        }
+
         card.appendChild(stats);
 
         const btnExportar = document.createElement("button");
         btnExportar.className = "export-btn";
         btnExportar.textContent = "📊 Exportar PNG";
-        btnExportar.onclick = () => exportarImagen(canvas, prueba.nombre);
+        btnExportar.onclick = () => exportarImagen(canvas, prueba.test_name);
         card.appendChild(btnExportar);
 
         contenedor.appendChild(card);
 
-        const chart = new Chart(canvas, obtenerConfiguracionGrafico(prueba));
-        charts.push(chart);
+        // Generar el gráfico
+        const configuracion = obtenerConfiguracionGrafico(prueba);
+        if (configuracion) {
+          const chart = new Chart(canvas, configuracion);
+          charts.push(chart);
+        }
       });
     }
 
@@ -246,7 +699,51 @@
       link.click();
     }
 
+    // CSS adicional que deberías agregar a tu hoja de estilos
+    const estilosAdicionales = `
+.stats-info {
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(55, 65, 81, 0.3);
+  border-radius: 8px;
+  border-left: 4px solid #06b6d4;
+}
+
+.stat-item {
+  margin: 8px 0;
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+.stat-item strong {
+  color: #06b6d4;
+}
+
+.chart-container {
+  position: relative;
+  margin: 20px 0;
+}
+
+.export-btn {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  margin-top: 15px;
+}
+
+.export-btn:hover {
+  background: linear-gradient(135deg, #0891b2, #0e7490);
+  transform: translateY(-2px);
+}
+`;
+
     renderResultados();
   </script>
 </body>
+
 </html>
