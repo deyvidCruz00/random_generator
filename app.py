@@ -14,6 +14,11 @@ import matplotlib.pyplot as plt
 import base64
 import io
 
+# Variables globales para almacenar los Ri generados
+ri_cuadrados = []
+ri_lineal = []
+ri_multiplicativo = []
+
 app = Flask(__name__)
 
 @app.route("/pruebas")
@@ -57,6 +62,9 @@ def cuadrados():
 
         #df = generar_mc(int(semilla), int(float(n)), float(min_val), float(max_val))
         df = generar_mc(int(semilla), int(float(n)))
+        # Mapear los valores Ri a variable global
+        global ri_cuadrados
+        ri_cuadrados = df['Ri'].tolist()
         data = df.to_html(classes="table table-bordered table-striped", index=False)
 
     return render_template("cuadrados.html", 
@@ -89,6 +97,9 @@ def lineal():
         # Aquí llamamos al generador de congruencia lineal
         # df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)), float(min_val), float(max_val))
         df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)),0,0)
+        # Mapear los valores Ri a variable global
+        global ri_lineal
+        ri_lineal = df['Ri'].tolist()
         data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
 
     return render_template("lineal.html", 
@@ -123,6 +134,9 @@ def multiplicativo():
         # Llamamos al generador de congruencia multiplicativa
         # df = generar_cm(int(xo), int(t), int(g), int(float(n)), float(min_val), float(max_val))
         df = generar_cm(int(xo), int(t), int(g), int(float(n)))
+        # Mapear los valores Ri a variable global
+        global ri_multiplicativo
+        ri_multiplicativo = df['Ri'].tolist()
         data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
 
     return render_template("multiplicativo.html",
@@ -257,5 +271,17 @@ def grafico():
 
     return send_file(img, mimetype="image/png")
 
+@app.route("/obtener_ri/<generador>")
+def obtener_ri(generador):
+    if generador == "cuadrados":
+        return {"ri": ri_cuadrados}
+    elif generador == "lineal":
+        return {"ri": ri_lineal}
+    elif generador == "multiplicativo":
+        return {"ri": ri_multiplicativo}
+    else:
+        return {"error": "Generador no válido"}
+
 if __name__ == "__main__":
     app.run(debug=True)
+

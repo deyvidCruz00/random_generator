@@ -8,9 +8,8 @@ import base64
 from modules.generadores.congruencia_lineal import generar
 
 
-def distribucion_normal_inversa(df_uniformes,std_dev, num_samples, mean, semilla, k, c, g, a=0, b=1):
+def distribucion_normal_inversa(uniformes,std_dev, num_samples, mean, semilla, k, c, g, a=0, b=1):
     # Generar uniformes con tu congruencial lineal
-    uniformes = df_uniformes["Ri"].tolist()
     # print(uniformes)
 
     registros = []
