@@ -19,6 +19,8 @@ def prueba_de_varianza(datos, alpha=0.05, mu_esperada=0.5):
     li = Xi1 / (12 * (n-1))
     ls = Xi2 / (12 * (n-1))
 
+    chi2 = ((n - 1) * varianza) / (1 / 12)
+
     # Decisión
     if li <= varianza <= ls:
         decision = "Paso la prueba de varianza."
@@ -27,7 +29,7 @@ def prueba_de_varianza(datos, alpha=0.05, mu_esperada=0.5):
 
     # Construcción del resultado con todas las variables
     resultado = {
-        "datos": datos,
+        "test_name": "Prueba de Varianza",
         "n": n,
         "alpha": alpha,
         "mu_esperada": mu_esperada,
@@ -36,6 +38,7 @@ def prueba_de_varianza(datos, alpha=0.05, mu_esperada=0.5):
         "Xi2": Xi2,
         "limite_inferior": li,
         "limite_superior": ls,
+        "chi2": chi2,
         "decision": decision
     }
 
@@ -45,6 +48,7 @@ def prueba_de_varianza(datos, alpha=0.05, mu_esperada=0.5):
 # Ejemplo de uso
 np.random.seed(42)
 datos = np.random.uniform(0,1,50)
+
 
 resultado = prueba_de_varianza(datos, alpha=0.05)
 print(resultado)

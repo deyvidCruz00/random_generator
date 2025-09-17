@@ -2,7 +2,11 @@ import numpy as np
 import scipy.stats as stats
 import json
 
-def prueba_chi_cuadrado(datos, k, alpha=0.05):
+def truncar(num, decimales=5):
+    factor = 10.0 ** decimales
+    return int(num * factor) / factor
+
+def prueba_chi_cuadrado(datos, k=8, alpha=0.05):
     """
     Prueba Chi-cuadrado de uniformidad
     datos: lista o array de números pseudoaleatorios
@@ -33,18 +37,25 @@ def prueba_chi_cuadrado(datos, k, alpha=0.05):
     
     # Construcción de la respuesta en formato JSON
     resultado = {
-        "intervalos": [],
-        "totales": {
+        "test_name": "Prueba Chi-Cuadrado",
+        "intervals": k,
+        "n": n,
+        "range": {
+            "minimum": truncar(minimo, 5),
+            "maximum": truncar(maximo, 5)
+        },
+        "intervals_data": [],
+        "statistics": {
             "frecuencia_obt_total": int(np.sum(frecuencias_obs)),
             "frecuencia_esp_total": int(freq_esp * k),
-            "chi2_total": round(float(chi2_total), 4),
-            "chi2_critico": round(float(chi2_critico), 4),
-            "pasa_prueba": bool(chi2_total < chi2_critico)  # 👈 True/False -> JSON true/false
-        }
+            "chi2_total": truncar(chi2_total, 5),
+            "chi2_critico": truncar(chi2_critico, 5),
+        },
+        "decision": "No se rechaza H0 (pasa la prueba)" if chi2_total < chi2_critico else "Se rechaza H0 (no pasa la prueba)"
     }
 
     for i in range(k):
-        resultado["intervalos"].append({
+        resultado["intervals_data"].append({
             "no": i+1,
             "inicio": round(float(intervalos[i]), 8),
             "fin": round(float(intervalos[i+1]), 8),
@@ -53,17 +64,4 @@ def prueba_chi_cuadrado(datos, k, alpha=0.05):
             "chi2": round(float(chi2_vals[i]), 3)
         })
 
-    # 👇 Convertimos el diccionario a JSON válido
     return json.dumps(resultado, ensure_ascii=False, indent=2)
-
-# ==============================
-# Ejemplo de uso:
-# ==============================
-
-datos = [0.08936784,0.20157843,0.31378902,0.42599961,0.53821019,
-         0.65042078,0.76263137,0.87484196,0.98705254,0.20157843,
-         0.31378902,0.87484196,0.20157843,0.42599961,0.87484196]
-
-resultado = prueba_chi_cuadrado(datos, k=8, alpha=0.05)
-
-print(resultado)

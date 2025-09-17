@@ -1,18 +1,39 @@
-from flask import Flask, render_template, request, send_file
-import pandas as pd
-import io
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-
+from flask import Flask, request, jsonify, render_template, send_file
+from modules.pruebas.dispatcher import ejecutar_pruebas
 from modules.generadores.minimos_cuadrados import generar as generar_mc
 from modules.generadores.congruencia_lineal import generar as generar_cl
 from modules.generadores.congruencia_multi import generar as generar_cm
 #from modules.pruebas import media as prueba_media_mod
 
-
+import pandas as pd
+import io
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+import base64
+import io
 
 app = Flask(__name__)
+
+@app.route("/pruebas")
+def pruebas():
+    return render_template("pruebas.html")
+
+@app.route("/evaluar", methods=["POST"])
+def api_pruebas():
+    data = request.get_json()
+    datos = data.get("numeros", [])
+    pruebas = data.get("pruebasSeleccionadas", {})
+    alpha = data.get("alpha", 0.05)
+
+    resultados = ejecutar_pruebas(datos, pruebas, alpha)
+    return jsonify(resultados)
+
+@app.route("/resultados")
+def resultados():
+    return render_template("results.html")
+
 
 # Página principal
 @app.route("/")
@@ -174,11 +195,6 @@ def exportar_csv_congruencial_multiplicativa():
                      mimetype="text/csv",
                      as_attachment=True,
                      download_name="congruencial_multiplicativa.csv")
-
-import matplotlib.pyplot as plt
-import base64
-import io
-from flask import jsonify
 
 @app.route("/graficar/cuadrados_medios", methods=["POST"])
 def graficar_cuadrados_medios():

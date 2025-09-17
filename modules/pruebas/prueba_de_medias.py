@@ -27,7 +27,7 @@ def prueba_de_medias(datos, alpha=0.05, mu_esperada=0.5):
 
     # Construcción del diccionario con todas las variables
     resultado = {
-        "datos": datos,
+        "test_name": "Prueba de Medias",
         "n": n,
         "alpha": alpha,
         "mu_esperada": mu_esperada,
