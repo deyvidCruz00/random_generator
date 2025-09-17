@@ -37,8 +37,9 @@ def prueba_chi_cuadrado(datos, k=8, alpha=0.05):
     
     # Construcción de la respuesta en formato JSON
     resultado = {
-        "test_name": "chi-cuadrado",
+        "test_name": "Prueba Chi-Cuadrado",
         "intervals": k,
+        "n": n,
         "range": {
             "minimum": truncar(minimo, 5),
             "maximum": truncar(maximo, 5)

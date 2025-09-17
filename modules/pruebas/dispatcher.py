@@ -15,11 +15,11 @@ PRUEBAS_DISPONIBLES = {
 
 def ejecutar_pruebas(datos, pruebas, alpha):
     resultados = {}
-    for nombre, seleccionada in pruebas.items():
-        if nombre == "kolmogorov" and seleccionada and nombre in PRUEBAS_DISPONIBLES:
-            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, alpha=alpha)
-        elif nombre == "chi" and seleccionada and nombre in PRUEBAS_DISPONIBLES:
-            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, alpha=alpha) 
-        elif seleccionada and nombre in PRUEBAS_DISPONIBLES:
+    for nombre, info in pruebas.items():
+        if nombre == "kolmogorov" and info != False and nombre in PRUEBAS_DISPONIBLES:
+            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, k=info.get("k") , alpha=alpha)
+        elif nombre == "chi" and info != False and nombre in PRUEBAS_DISPONIBLES:
+            resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, k=info.get("k"), alpha=alpha) 
+        elif info and nombre in PRUEBAS_DISPONIBLES:
             resultados[nombre] = PRUEBAS_DISPONIBLES[nombre](datos, alpha=alpha)
     return resultados

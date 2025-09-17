@@ -143,11 +143,12 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jstat@latest/dist/jstat.min.js"></script>
+
 
   <script>
     let charts = [];
 
-    const numeros = JSON.parse(sessionStorage.getItem("numerosGenerados"));
     const resultados = JSON.parse(sessionStorage.getItem("resultadosPruebas"));
 
     const temaHibrido = {
@@ -472,11 +473,24 @@
       };
     }
 
-    // Configuración para la prueba de varianza
     function obtenerConfiguracionVarianza(prueba) {
-      // Para la prueba de varianza usamos distribución Chi-cuadrado
-      const gl = numeros.length - 1; // grados de libertad
+      const gl = prueba.n - 1; // grados de libertad
       const datosChiCuadrado = generarDistribucionChiCuadrado(gl);
+
+      // Filtrar el área entre límites
+      const datosArea = datosChiCuadrado.filter(p =>
+        p.x >= prueba.Xi1 && p.x <= prueba.Xi2
+      );
+
+      // Completar el área (cerrando hacia el eje x)
+      const areaCompleta = [
+        { x: prueba.Xi1, y: 0 },
+        ...datosArea,
+        { x: prueba.Xi2, y: 0 }
+      ];
+
+      // Calcular valor χ²
+      const chi2calc = prueba.chi2;
 
       return {
         type: 'line',
@@ -493,22 +507,33 @@
               borderWidth: 3
             },
             {
-              label: 'Valor Calculado',
+              label: 'Región de aceptación',
+              data: areaCompleta,
+              borderColor: 'transparent',
+              backgroundColor: 'rgba(16, 185, 129, 0.3)', // verde transparente
+              fill: true,
+              pointRadius: 0,
+              tension: 0.4
+            },
+            {
+              label: `χ² calculado = ${chi2calc.toFixed(3)}`,
               data: [
-                { x: (prueba.n - 1) * prueba.varianza_muestral / (1 / 12), y: 0 },
-                { x: (prueba.n - 1) * prueba.varianza_muestral / (1 / 12), y: 0.1 }
+                { x: chi2calc, y: 0 },
+                { x: chi2calc, y: Math.max(...datosChiCuadrado.map(d => d.y)) }
               ],
-              borderColor: temaHibrido.successColor,
-              backgroundColor: temaHibrido.successColor,
-              borderWidth: 4,
-              pointRadius: 8,
-              pointBackgroundColor: temaHibrido.successColor,
+              borderColor: temaHibrido.errorColor,
+              borderWidth: 2,
+              borderDash: [6, 4], // línea punteada
+              pointRadius: 0,
               showLine: true,
               fill: false
             },
             {
-              label: 'Límite Inferior (χ₁²)',
-              data: [{ x: prueba.Xi1, y: 0 }, { x: prueba.Xi1, y: 0.08 }],
+              label: `LI = ${prueba.Xi1.toFixed(3)}`,
+              data: [
+                { x: prueba.Xi1, y: 0 },
+                { x: prueba.Xi1, y: Math.max(...datosChiCuadrado.map(d => d.y)) }
+              ],
               borderColor: temaHibrido.warningColor,
               borderWidth: 2,
               borderDash: [5, 5],
@@ -517,8 +542,11 @@
               fill: false
             },
             {
-              label: 'Límite Superior (χ₂²)',
-              data: [{ x: prueba.Xi2, y: 0 }, { x: prueba.Xi2, y: 0.08 }],
+              label: `LS = ${prueba.Xi2.toFixed(3)}`,
+              data: [
+                { x: prueba.Xi2, y: 0 },
+                { x: prueba.Xi2, y: Math.max(...datosChiCuadrado.map(d => d.y)) }
+              ],
               borderColor: temaHibrido.warningColor,
               borderWidth: 2,
               borderDash: [5, 5],
@@ -532,16 +560,13 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            tooltip: {
-              enabled: false
-            },
-            legend: {
-              display: true,
-              labels: { color: temaHibrido.textColor }
-            },
+            tooltip: { enabled: false },
+            legend: { labels: { color: temaHibrido.textColor } },
             title: {
               display: true,
-              text: `Prueba de Varianza: σ² = ${prueba.varianza_muestral.toFixed(4)} (gl = ${gl})`,
+              text: `Prueba de Varianza: σ² = ${prueba.varianza_muestral.toFixed(
+                4
+              )} (gl = ${gl})`,
               color: temaHibrido.textColor,
               font: { size: 14 }
             }
@@ -549,20 +574,12 @@
           scales: {
             x: {
               type: 'linear',
-              title: {
-                display: true,
-                text: 'Valor χ²',
-                color: temaHibrido.textColor
-              },
+              title: { display: true, text: 'Valor χ²', color: temaHibrido.textColor },
               grid: { color: temaHibrido.gridColor },
               ticks: { color: temaHibrido.textColor }
             },
             y: {
-              title: {
-                display: true,
-                text: 'Densidad de Probabilidad',
-                color: temaHibrido.textColor
-              },
+              title: { display: true, text: 'Densidad de Probabilidad', color: temaHibrido.textColor },
               grid: { color: temaHibrido.gridColor },
               ticks: { color: temaHibrido.textColor }
             }
@@ -571,30 +588,102 @@
       };
     }
 
-    // Función para generar distribución Chi-cuadrado aproximada
-    function generarDistribucionChiCuadrado(gl, puntos = 100) {
+    // Generar distribución Chi-cuadrado con jStat
+    function generarDistribucionChiCuadrado(gl, puntos = 200) {
       const datos = [];
-      const max = Math.max(100, gl * 3); // rango adaptativo
-      const paso = max / puntos;
+      const min = Math.max(0, gl - 5 * Math.sqrt(2 * gl)); // límite inferior aproximado
+      const max = gl + 5 * Math.sqrt(2 * gl); // límite superior aproximado
+      const paso = (max - min) / puntos;
 
-      for (let i = 0.1; i <= max; i += paso) {
-        // Aproximación de la densidad Chi-cuadrado
-        const y = (Math.pow(i, gl / 2 - 1) * Math.exp(-i / 2)) /
-          (Math.pow(2, gl / 2) * gamma(gl / 2));
+      for (let i = min; i <= max; i += paso) {
+        const y = jStat.chisquare.pdf(i, gl); // usamos jStat directamente
         datos.push({ x: i, y: y });
       }
 
       return datos;
     }
 
-    // Aproximación de la función Gamma para valores pequeños
-    function gamma(z) {
-      if (z === 0.5) return Math.sqrt(Math.PI);
-      if (z === 1) return 1;
-      if (z === 1.5) return Math.sqrt(Math.PI) / 2;
-      if (z === 2) return 1;
-      // Para otros valores, usar aproximación de Stirling
-      return Math.sqrt(2 * Math.PI / z) * Math.pow(z / Math.E, z);
+
+    function obtenerConfiguracionChiCuadrado(prueba) {
+      const etiquetas = prueba.intervals_data.map(intervalo =>
+        `[${intervalo.inicio.toFixed(3)}, ${intervalo.fin.toFixed(3)})`
+      );
+
+      const frecuenciasObservadas = prueba.intervals_data.map(intervalo => intervalo.frecuencia_obt);
+      const n = prueba.n;
+      const k = prueba.intervals;
+      const frecuenciaEsperada = n / k;
+
+      return {
+        type: 'bar',
+        data: {
+          labels: etiquetas,
+          datasets: [
+            {
+              label: 'Frecuencia Observada',
+              data: frecuenciasObservadas,
+              backgroundColor: 'rgba(6, 182, 212, 0.7)',
+              borderColor: '#06b6d4',
+              borderWidth: 1
+            },
+            {
+              label: `Frecuencia Esperada (${frecuenciaEsperada.toFixed(2)})`,
+              data: Array(etiquetas.length).fill(frecuenciaEsperada),
+              type: 'line',
+              borderColor: '#ef4444',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              fill: false,
+              pointRadius: 0,
+              tension: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              labels: { color: temaHibrido.textColor }
+            },
+            title: {
+              display: true,
+              text: `Prueba Chi-Cuadrado - χ² = ${prueba.statistics.chi2_total.toFixed(3)} (Crítico: ${prueba.statistics.chi2_critico.toFixed(3)})`,
+              color: temaHibrido.textColor,
+              font: { size: 16, weight: 'bold' }
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(30, 41, 55, 0.9)',
+              titleColor: temaHibrido.textColor,
+              bodyColor: temaHibrido.textColor,
+              borderColor: temaHibrido.chartColor,
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Intervalos',
+                color: temaHibrido.textColor
+              },
+              grid: { color: temaHibrido.gridColor },
+              ticks: { color: temaHibrido.textColor }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Frecuencia',
+                color: temaHibrido.textColor
+              },
+              grid: { color: temaHibrido.gridColor },
+              ticks: { color: temaHibrido.textColor }
+            }
+          }
+        }
+      };
     }
 
     // Función principal para obtener configuración según el tipo de prueba
@@ -606,11 +695,13 @@
           return obtenerConfiguracionKolmogorov(prueba);
         case "Prueba de Varianza":
           return obtenerConfiguracionVarianza(prueba);
-        // Aquí agregaremos las demás pruebas después
+        case "Prueba Chi-Cuadrado":
+          return obtenerConfiguracionChiCuadrado(prueba);
         default:
           return null;
       }
     }
+
 
     function renderResultados() {
       const contenedor = document.getElementById("pruebasResultados");
