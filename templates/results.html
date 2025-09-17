@@ -190,7 +190,7 @@
     function obtenerConfiguracionMedias(prueba) {
       const varianza = 1 / 12; // Para distribución uniforme [0,1], la varianza teórica es 1/12
       const desviacionEstandar = calcularDesviacionEstandarMedia(varianza, prueba.n);
-      const datosNormal = generarDistribucionNormal(prueba.media_muestra, desviacionEstandar);
+      const datosNormal = generarDistribucionNormal(prueba.mu_esperada, desviacionEstandar);
 
       // Crear datos para el área de aceptación (entre límites)
       const datosAreaAceptacion = datosNormal.filter(punto =>
@@ -265,6 +265,17 @@
               data: [{ x: prueba.media_muestra, y: 0 }, { x: prueba.media_muestra, y: Math.max(...datosNormal.map(d => d.y)) }],
               borderColor: temaHibrido.textColor,
               backgroundColor: temaHibrido.textColor,
+              borderWidth: 3,
+              borderDash: [4, 2],
+              pointRadius: 0,
+              showLine: true,
+              fill: false
+            },
+            {
+              label: `Media esperada = ${prueba.mu_esperada.toFixed(3)}`,
+              data: [{ x: prueba.mu_esperada, y: 0 }, { x: prueba.mu_esperada, y: Math.max(...datosNormal.map(d => d.y)) }],
+              borderColor: "#f59e0b",
+              backgroundColor: "#f59e0b",
               borderWidth: 3,
               borderDash: [4, 2],
               pointRadius: 0,
