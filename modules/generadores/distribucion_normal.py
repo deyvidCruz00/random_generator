@@ -1,31 +1,58 @@
-import math
 import pandas as pd
-from modules.generadores.congruencia_lineal import generar as generar_cl
+from scipy.stats import norm
+import matplotlib.pyplot as plt
+import numpy as np
+import io
+import base64
 
-def distribucion_normal(std_dev, num_samples, mean, semilla, k, c, g, a=0, b=1):
-    # Usa el generador congruencial lineal para obtener 2*num_samples números uniformes
-    df_uniformes = generar_cl(semilla, k, c, g, num_samples * 2, a, b)
+from modules.generadores.congruencia_lineal import generar
+
+
+def distribucion_normal_inversa(df_uniformes,std_dev, num_samples, mean, semilla, k, c, g, a=0, b=1):
+    # Generar uniformes con tu congruencial lineal
     uniformes = df_uniformes["Ri"].tolist()
+    # print(uniformes)
 
     registros = []
-    for i in range(num_samples):
-        u = uniformes[2*i]
-        v = uniformes[2*i + 1]
-        x = math.sqrt(-2.0 * math.log(u)) * math.cos(2.0 * math.pi * v)
-        ri = x * std_dev
-        ni = mean + x * std_dev
+    for i, u in enumerate(uniformes):
+        # Inversa de la CDF de la normal (usa la f.d.p. integrada)
+        x = norm.ppf(u, loc=mean, scale=std_dev)
         registros.append({
             "i": i,
-            "Ri": ri,
-            "Ni": ni
+            "U": u,
+            "Ni": x
         })
-    df = pd.DataFrame(registros)
-    return df
 
-# Ejemplo de uso:
-# std_dev = 1.0
-# num_samples = 10
-# mean = 0.0
-# semilla, k, c, g = 5, 3, 7, 16
-# df = distribucion_normal(std_dev, num_samples, mean, semilla, k, c, g)
-# print(df)
+    return pd.DataFrame(registros)
+
+def graficar_distribucion_normal(df_uniformes,std_dev, mean, num_samples, semilla, k, c, g):
+    from modules.generadores.distribucion_normal import distribucion_normal_inversa
+
+    # Generar datos
+    df = distribucion_normal_inversa(df_uniformes,std_dev, num_samples, mean, semilla, k, c, g)
+    muestras = df["Ni"].values
+
+    plt.figure(figsize=(8, 5))
+
+    # Histograma de las muestras simuladas
+    plt.hist(muestras, bins=40, density=True, alpha=0.6, color='skyblue', edgecolor='black', label="Muestras simuladas")
+
+    # Curva teórica de la distribución normal
+    x = np.linspace(min(muestras), max(muestras), 200)
+    pdf = norm.pdf(x, loc=mean, scale=std_dev)
+    plt.plot(x, pdf, 'r-', linewidth=2, label="Curva teórica N(μ,σ)")
+
+    plt.title("Distribución Normal simulada vs teórica")
+    plt.xlabel("Valor")
+    plt.ylabel("Densidad de probabilidad")
+    plt.legend()
+    plt.grid(True, linestyle="--", alpha=0.6)
+
+    # Guardar la figura en un buffer y devolverla como base64
+    buf = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(buf, format="png")
+    plt.close()
+    buf.seek(0)
+    img_base64 = base64.b64encode(buf.read()).decode('utf-8')
+    return img_base64
