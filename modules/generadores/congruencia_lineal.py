@@ -11,16 +11,16 @@ def generar(x_o, k, c, g, n, a_intervalo=0, b_intervalo=10):
         x_i = np.mod(((a * x_a) + c), m)
         x_a = x_i
         r_i = truncar(x_i / m, 5)
-        ni = truncar(a_intervalo + (b_intervalo - a_intervalo) * r_i, 5)
+        # ni = truncar(a_intervalo + (b_intervalo - a_intervalo) * r_i, 5)
 
         registros.append({
-            "i": i,
+            "i": i+1,
             "Xi": int(x_i),
-            "a": a,
-            "c": c,
-            "m": m,
-            "Ri": r_i,
-            "Ni": ni
+            # "a": a,
+            # "c": c,
+            # "m": m,
+            "Ri": r_i
+            # "Ni": ni
         })
 
     df = pd.DataFrame(registros)

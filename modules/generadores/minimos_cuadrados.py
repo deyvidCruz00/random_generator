@@ -10,7 +10,7 @@ def generar(seed, amount, a=0, b=10):
         if ext is None:
             break  # No se puede extraer, termina la secuencia
         ri = truncar(ext / 10000, 5)
-        ni = truncar(a + (b - a) * ri, 5)
+        # ni = truncar(a + (b - a) * ri, 5)
 
         registros.append({
             "i": i,
@@ -18,8 +18,8 @@ def generar(seed, amount, a=0, b=10):
             "Xi^2": x_cuadrado,
             "Extension": int(math.log10(abs(x_cuadrado))) + 1,
             "Extraccion": ext,
-            "Ri": ri,
-            "Ni": ni
+            "Ri": ri
+            # "Ni": ni
         })
         x_i = ext
 

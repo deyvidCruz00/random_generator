@@ -21,17 +21,17 @@
         <label>Iteraciones:</label>
         <input type="number" name="iteraciones" class="form-control" required value="{{ n }}">
       </div>
-      <div class="mb-3">
+      <!-- <div class="mb-3">
         <label>Valor mínimo Ni:</label>
         <input type="number" step="0.01" name="min" class="form-control" required value="{{ min_val }}">
       </div>
       <div class="mb-3">
         <label>Valor máximo Ni:</label>
         <input type="number" step="0.01" name="max" class="form-control" required value="{{ max_val }}">
-      </div>
+      </div> -->
 
       <button type="submit" class="btn btn-primary">Generar</button>
-      <button formaction="/exportar_csv_multiplicativo" formmethod="POST" class="btn btn-success">Exportar CSV</button>
+      <button formaction="/export_multiplicativa_csv" formmethod="POST" class="btn btn-success">Exportar CSV</button>
       <button formaction="/grafico_multiplicativo" formmethod="POST" class="btn btn-info">Ver Gráfico</button>
     </form>
   </div>
