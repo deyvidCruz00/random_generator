@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ titulo }}</h2>
+
+<div class="row">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Cargar Semillas desde Archivo CSV</h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="archivo" class="form-label">Seleccionar archivo CSV:</label>
+            <input type="file" class="form-control" id="archivo" name="archivo" accept=".csv" required>
+            <div class="form-text">
+              El archivo debe contener una columna llamada: <strong>semilla</strong>, <strong>seed</strong>, <strong>x0</strong> o <strong>xo</strong>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Cargar Semillas</button>
+          <a href="/{{ metodo }}" class="btn btn-secondary">Volver</a>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0">Formato del Archivo</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>Ejemplo de archivo CSV:</strong></p>
+        <pre class="bg-light p-2 rounded">semilla
+1234
+5678
+9012
+3456</pre>
+        <p class="mb-0"><small class="text-muted">
+          También se aceptan columnas llamadas: seed, x0, xo
+        </small></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if error %}
+<div class="alert alert-danger mt-3">
+  <strong>Error:</strong> {{ error }}
+</div>
+{% endif %}
+
+{% if success %}
+<div class="alert alert-success mt-3">
+  <strong>Éxito:</strong> {{ success }}
+</div>
+
+<div class="card mt-3">
+  <div class="card-header">
+    <h5 class="mb-0">Semillas Cargadas - Selecciona una</h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      {% for semilla in semillas %}
+      <div class="col-md-3 col-sm-4 col-6 mb-3">
+        <div class="card border-primary">
+          <div class="card-body text-center p-2">
+            <h6 class="card-title mb-2">{{ semilla }}</h6>
+            <form method="POST" action="/usar_semilla_{{ metodo }}" style="display: inline;">
+              <input type="hidden" name="semilla" value="{{ semilla }}">
+              <button type="submit" class="btn btn-primary btn-sm">Usar esta semilla</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    <hr>
+    <h6>Otras opciones:</h6>
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-info" onclick="copiarSemillas()">Copiar Lista</button>
+      <button type="button" class="btn btn-warning" onclick="descargarSemillas()">Descargar CSV</button>
+      <a href="/{{ metodo }}" class="btn btn-secondary">Volver al Generador</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function copiarSemillas() {
+  const semillas = [{% for semilla in semillas %}{{ semilla }}{% if not loop.last %}, {% endif %}{% endfor %}];
+  const texto = semillas.join(', ');
+  navigator.clipboard.writeText(texto).then(function() {
+    alert('Semillas copiadas al portapapeles: ' + texto);
+  });
+}
+
+function descargarSemillas() {
+  const semillas = [{% for semilla in semillas %}{{ semilla }}{% if not loop.last %}, {% endif %}{% endfor %}];
+  let csv = 'semilla\\n';
+  semillas.forEach(function(semilla) {
+    csv += semilla + '\\n';
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'semillas_{{ metodo }}.csv';
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+</script>
+{% endif %}
+
+{% endblock %}

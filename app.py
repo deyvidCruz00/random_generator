@@ -22,6 +22,11 @@ ri_cuadrados = []
 ri_lineal = []
 ri_multiplicativo = []
 
+# Variables globales para almacenar semilla seleccionada por método
+semilla_seleccionada_cuadrados = None
+semilla_seleccionada_lineal = None
+semilla_seleccionada_multiplicativo = None
+
 # Variable global para rastrear el último método de generación usado
 ultimo_metodo_generacion = None
 
@@ -54,11 +59,19 @@ def index():
 # Cuadrados medios
 @app.route("/cuadrados", methods=["GET", "POST"])
 def cuadrados():
+    global semilla_seleccionada_cuadrados
     data = None
     semilla = ""
     n = ""
     min_val = ""
     max_val = ""
+    resultados_pruebas = None
+
+    # Si hay una semilla pre-cargada y es GET, usar esa semilla
+    if request.method == "GET" and semilla_seleccionada_cuadrados:
+        semilla = str(semilla_seleccionada_cuadrados)
+        # Limpiar la semilla después de usarla
+        semilla_seleccionada_cuadrados = None
 
     if request.method == "POST":
         semilla = request.form["semilla"]
@@ -73,24 +86,38 @@ def cuadrados():
         ri_cuadrados = df['Ri'].tolist()
         ultimo_metodo_generacion = "cuadrados"
         data = df.to_html(classes="table table-bordered table-striped", index=False)
+        
+        # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
+        if ri_cuadrados:
+            resultados_pruebas_raw = ejecutar_pruebas_internas(ri_cuadrados)
+            resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
 
     return render_template("cuadrados.html", 
                            table=data, 
                            semilla=semilla, 
                            n=n, 
                            min_val=min_val, 
-                           max_val=max_val)
+                           max_val=max_val,
+                           resultados_pruebas=resultados_pruebas)
 
 @app.route("/lineal", methods=["GET", "POST"])
 def lineal():
+    global semilla_seleccionada_lineal
     data = None
     xo = ""
     k = ""
     c = ""
     g = ""
     n = ""
+    resultados_pruebas = None
     # min_val = ""
     # max_val = ""
+
+    # Si hay una semilla pre-cargada y es GET, usar esa semilla
+    if request.method == "GET" and semilla_seleccionada_lineal:
+        xo = str(semilla_seleccionada_lineal)
+        # Limpiar la semilla después de usarla
+        semilla_seleccionada_lineal = None
 
     if request.method == "POST":
         xo = request.form["xo"]
@@ -109,6 +136,11 @@ def lineal():
         ri_lineal = df['Ri'].tolist()
         ultimo_metodo_generacion = "lineal"
         data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
+        
+        # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
+        if ri_lineal:
+            resultados_pruebas_raw = ejecutar_pruebas_internas(ri_lineal)
+            resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
 
     return render_template("lineal.html", 
                            table=data, 
@@ -116,20 +148,29 @@ def lineal():
                            k=k, 
                            c=c, 
                            g=g, 
-                           n=n)
+                           n=n,
+                           resultados_pruebas=resultados_pruebas)
                         #    min_val=min_val, 
                         #    max_val=max_val)
 
 @app.route("/multiplicativo", methods=["GET", "POST"])
 def multiplicativo():
+    global semilla_seleccionada_multiplicativo
     data = None
     xo = ""
     k = ""
     t = ""
     g = ""
     n = ""
+    resultados_pruebas = None
     # min_val = ""
     # max_val = ""
+
+    # Si hay una semilla pre-cargada y es GET, usar esa semilla
+    if request.method == "GET" and semilla_seleccionada_multiplicativo:
+        xo = str(semilla_seleccionada_multiplicativo)
+        # Limpiar la semilla después de usarla
+        semilla_seleccionada_multiplicativo = None
 
     if request.method == "POST":
         xo = request.form["xo"]
@@ -147,6 +188,11 @@ def multiplicativo():
         ri_multiplicativo = df['Ri'].tolist()
         ultimo_metodo_generacion = "multiplicativo"
         data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
+        
+        # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
+        if ri_multiplicativo:
+            resultados_pruebas_raw = ejecutar_pruebas_internas(ri_multiplicativo)
+            resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
 
     return render_template("multiplicativo.html",
                            table=data,
@@ -154,7 +200,8 @@ def multiplicativo():
                            k=k,
                            t=t,
                            g=g,
-                           n=n)
+                           n=n,
+                           resultados_pruebas=resultados_pruebas)
                         #    min_val=min_val,
                         #    max_val=max_val)
 
@@ -219,66 +266,72 @@ def exportar_csv_congruencial_multiplicativa():
                      as_attachment=True,
                      download_name="congruencial_multiplicativa.csv")
 
-@app.route("/graficar/cuadrados_medios", methods=["POST"])
-def graficar_cuadrados_medios():
-    semilla = int(request.form["semilla"])
-    n = int(request.form["iteraciones"])
-    min_val = float(request.form["min"])
-    max_val = float(request.form["max"])
+# Métodos para exportar únicamente los Ri generados
+@app.route("/export_ri_cuadrados", methods=["POST"])
+def exportar_ri_cuadrados():
+    """Exportar solo los valores Ri de cuadrados medios previamente generados"""
+    global ri_cuadrados
+    
+    if not ri_cuadrados:
+        # Si no hay datos, mostrar mensaje de error
+        return render_template("cuadrados.html", 
+                             error="No hay datos de cuadrados medios disponibles para exportar.")
+    
+    # Crear DataFrame solo con los Ri
+    df_ri = pd.DataFrame({'Ri': ri_cuadrados})
+    
+    buffer = io.StringIO()
+    df_ri.to_csv(buffer, index=False)
+    buffer.seek(0)
 
-    df = generar_mc(semilla, n, min_val, max_val)
+    return send_file(io.BytesIO(buffer.getvalue().encode()),
+                     mimetype="text/csv",
+                     as_attachment=True,
+                     download_name="ri_cuadrados_medios.csv")
 
-    # --- Serie Temporal (índice vs Ri) ---
-    fig1, ax1 = plt.subplots()
-    ax1.plot(range(len(df["Ri"])), df["Ri"], marker="o", linestyle="-", markersize=3)
-    ax1.set_title("Serie Temporal - Cuadrados Medios")
-    ax1.set_xlabel("Iteración")
-    ax1.set_ylabel("Ri")
+@app.route("/export_ri_lineal", methods=["POST"])
+def exportar_ri_lineal():
+    """Exportar solo los valores Ri de congruencia lineal previamente generados"""
+    global ri_lineal
+    
+    if not ri_lineal:
+        # Si no hay datos, mostrar mensaje de error
+        return render_template("lineal.html", 
+                             error="No hay datos de congruencia lineal disponibles para exportar.")
+    
+    # Crear DataFrame solo con los Ri
+    df_ri = pd.DataFrame({'Ri': ri_lineal})
+    
+    buffer = io.StringIO()
+    df_ri.to_csv(buffer, index=False)
+    buffer.seek(0)
 
-    buf1 = io.BytesIO()
-    plt.savefig(buf1, format="png")
-    buf1.seek(0)
-    img1 = base64.b64encode(buf1.getvalue()).decode("utf-8")
-    plt.close(fig1)
+    return send_file(io.BytesIO(buffer.getvalue().encode()),
+                     mimetype="text/csv",
+                     as_attachment=True,
+                     download_name="ri_congruencia_lineal.csv")
 
-    # --- Histograma de Ri ---
-    fig2, ax2 = plt.subplots()
-    ax2.hist(df["Ri"], bins=20, edgecolor="black", alpha=0.7)
-    ax2.set_title("Histograma Ri - Cuadrados Medios")
-    ax2.set_xlabel("Valor Ri")
-    ax2.set_ylabel("Frecuencia")
+@app.route("/export_ri_multiplicativo", methods=["POST"])
+def exportar_ri_multiplicativo():
+    """Exportar solo los valores Ri de congruencia multiplicativa previamente generados"""
+    global ri_multiplicativo
+    
+    if not ri_multiplicativo:
+        # Si no hay datos, mostrar mensaje de error
+        return render_template("multiplicativo.html", 
+                             error="No hay datos de congruencia multiplicativa disponibles para exportar.")
+    
+    # Crear DataFrame solo con los Ri
+    df_ri = pd.DataFrame({'Ri': ri_multiplicativo})
+    
+    buffer = io.StringIO()
+    df_ri.to_csv(buffer, index=False)
+    buffer.seek(0)
 
-    buf2 = io.BytesIO()
-    plt.savefig(buf2, format="png")
-    buf2.seek(0)
-    img2 = base64.b64encode(buf2.getvalue()).decode("utf-8")
-    plt.close(fig2)
-
-    return jsonify({"serie_temporal": img1, "histograma": img2})
-
-
-# Gráfico
-@app.route("/grafico", methods=["POST"])
-def grafico():
-    semilla = int(request.form["semilla"])
-    n = int(request.form["iteraciones"])
-    min_val = float(request.form["min"])
-    max_val = float(request.form["max"])
-
-    df = generar_mc(semilla, n, min_val, max_val)
-
-    plt.figure(figsize=(6,4))
-    plt.plot(df["i"], df["Ri"], marker="o", linestyle="--")
-    plt.title("Comportamiento de Ri")
-    plt.xlabel("Iteración")
-    plt.ylabel("Ri")
-    plt.grid()
-
-    img = io.BytesIO()
-    plt.savefig(img, format="png")
-    img.seek(0)
-
-    return send_file(img, mimetype="image/png")
+    return send_file(io.BytesIO(buffer.getvalue().encode()),
+                     mimetype="text/csv",
+                     as_attachment=True,
+                     download_name="ri_congruencia_multiplicativa.csv")
 
 @app.route("/obtener_ri/<generador>")
 def obtener_ri_endpoint(generador):
@@ -511,6 +564,192 @@ def distribucion_uniforme_endpoint():
                          min_val=min_val, 
                          max_val=max_val,
                          metodo_usado=metodo_usado,
+                         resultados_pruebas=resultados_pruebas)
+
+
+# Rutas para cargar semillas desde archivo
+@app.route("/cargar_semillas_cuadrados", methods=["GET", "POST"])
+def cargar_semillas_cuadrados():
+    """Cargar semillas para cuadrados medios desde archivo CSV"""
+    return cargar_semillas_proceso("cuadrados", "Cargar Semillas - Cuadrados Medios")
+
+@app.route("/usar_semilla_cuadrados", methods=["POST"])
+def usar_semilla_cuadrados():
+    """Usar semilla seleccionada para cuadrados medios"""
+    from flask import redirect
+    global semilla_seleccionada_cuadrados
+    semilla = request.form.get('semilla')
+    if semilla:
+        semilla_seleccionada_cuadrados = int(semilla)
+    return redirect('/cuadrados')
+
+@app.route("/cargar_semillas_lineal", methods=["GET", "POST"])
+def cargar_semillas_lineal():
+    """Cargar valores X0 para congruencia lineal desde archivo CSV"""
+    return cargar_semillas_proceso("lineal", "Cargar Valores X0 - Congruencia Lineal")
+
+@app.route("/usar_semilla_lineal", methods=["POST"])
+def usar_semilla_lineal():
+    """Usar X0 seleccionado para congruencia lineal"""
+    from flask import redirect
+    global semilla_seleccionada_lineal
+    semilla = request.form.get('semilla')
+    if semilla:
+        semilla_seleccionada_lineal = int(semilla)
+    return redirect('/lineal')
+
+@app.route("/cargar_semillas_multiplicativo", methods=["GET", "POST"])
+def cargar_semillas_multiplicativo():
+    """Cargar valores X0 para congruencia multiplicativa desde archivo CSV"""
+    return cargar_semillas_proceso("multiplicativo", "Cargar Valores X0 - Congruencia Multiplicativa")
+
+@app.route("/usar_semilla_multiplicativo", methods=["POST"])
+def usar_semilla_multiplicativo():
+    """Usar X0 seleccionado para congruencia multiplicativa"""
+    from flask import redirect
+    global semilla_seleccionada_multiplicativo
+    semilla = request.form.get('semilla')
+    if semilla:
+        semilla_seleccionada_multiplicativo = int(semilla)
+    return redirect('/multiplicativo')
+
+def cargar_semillas_proceso(metodo, titulo):
+    """Función auxiliar para procesar la carga de semillas"""
+    if request.method == "GET":
+        return render_template("cargar_semillas.html", 
+                             metodo=metodo,
+                             titulo=titulo)
+    
+    if 'archivo' not in request.files:
+        return render_template("cargar_semillas.html", 
+                             metodo=metodo,
+                             titulo=titulo,
+                             error="No se seleccionó ningún archivo.")
+    
+    archivo = request.files['archivo']
+    if archivo.filename == '':
+        return render_template("cargar_semillas.html", 
+                             metodo=metodo,
+                             titulo=titulo,
+                             error="No se seleccionó ningún archivo.")
+    
+    try:
+        # Leer el archivo CSV
+        df = pd.read_csv(archivo)
+        
+        # Buscar columna con semillas/x0
+        columna_semilla = None
+        for col in df.columns:
+            if col.lower() in ['semilla', 'semillas', 'seed', 'seeds', 'x0', 'xo']:
+                columna_semilla = col
+                break
+        
+        if columna_semilla is None:
+            return render_template("cargar_semillas.html", 
+                                 metodo=metodo,
+                                 titulo=titulo,
+                                 error="No se encontró columna de semillas. Asegúrate de que el archivo tenga una columna llamada 'semilla', 'seed', 'x0' o 'xo'.")
+        
+        semillas = df[columna_semilla].tolist()
+        
+        # Validar que todas las semillas sean números válidos
+        semillas_validas = []
+        for semilla in semillas:
+            try:
+                semilla_int = int(float(semilla))
+                if semilla_int > 0:
+                    semillas_validas.append(semilla_int)
+            except (ValueError, TypeError):
+                continue
+        
+        if not semillas_validas:
+            return render_template("cargar_semillas.html", 
+                                 metodo=metodo,
+                                 titulo=titulo,
+                                 error="No se encontraron semillas válidas en el archivo.")
+        
+        return render_template("cargar_semillas.html", 
+                             metodo=metodo,
+                             titulo=titulo,
+                             semillas=semillas_validas,
+                             success=f"Se cargaron {len(semillas_validas)} semillas exitosamente.")
+    
+    except Exception as e:
+        return render_template("cargar_semillas.html", 
+                             metodo=metodo,
+                             titulo=titulo,
+                             error=f"Error al procesar el archivo: {str(e)}")
+
+
+@app.route("/pruebas_cuadrados", methods=["POST"])
+def pruebas_cuadrados():
+    """Ejecutar pruebas estadísticas sobre los números Ri de cuadrados medios"""
+    global ri_cuadrados
+    
+    if not ri_cuadrados:
+        return render_template("cuadrados.html", 
+                             error="No hay datos de cuadrados medios disponibles para realizar pruebas.")
+    
+    # Ejecutar pruebas estadísticas
+    resultados_pruebas_raw = ejecutar_pruebas_internas(ri_cuadrados)
+    resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+    
+    # Obtener parámetros actuales para el template
+    semilla = request.form.get("semilla", 1234)
+    n = request.form.get("iteraciones", 10)
+    
+    return render_template("cuadrados.html", 
+                         semilla=semilla,
+                         n=n,
+                         resultados_pruebas=resultados_pruebas)
+
+
+@app.route("/pruebas_lineal", methods=["POST"])
+def pruebas_lineal():
+    """Ejecutar pruebas estadísticas sobre los números Ri de congruencia lineal"""
+    global ri_lineal
+    
+    if not ri_lineal:
+        return render_template("lineal.html", 
+                             error="No hay datos de congruencia lineal disponibles para realizar pruebas.")
+    
+    # Ejecutar pruebas estadísticas
+    resultados_pruebas_raw = ejecutar_pruebas_internas(ri_lineal)
+    resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+    
+    # Obtener parámetros actuales para el template
+    xo = request.form.get("xo", 17)
+    k = request.form.get("k", 5)
+    c = request.form.get("c", 3)
+    g = request.form.get("g", 11)
+    n = request.form.get("iteraciones", 10)
+    
+    return render_template("lineal.html", 
+                         xo=xo, k=k, c=c, g=g, n=n,
+                         resultados_pruebas=resultados_pruebas)
+
+
+@app.route("/pruebas_multiplicativo", methods=["POST"])
+def pruebas_multiplicativo():
+    """Ejecutar pruebas estadísticas sobre los números Ri de congruencia multiplicativa"""
+    global ri_multiplicativo
+    
+    if not ri_multiplicativo:
+        return render_template("multiplicativo.html", 
+                             error="No hay datos de congruencia multiplicativa disponibles para realizar pruebas.")
+    
+    # Ejecutar pruebas estadísticas
+    resultados_pruebas_raw = ejecutar_pruebas_internas(ri_multiplicativo)
+    resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+    
+    # Obtener parámetros actuales para el template
+    xo = request.form.get("xo", 17)
+    t = request.form.get("t", 3)
+    g = request.form.get("g", 5)
+    n = request.form.get("iteraciones", 10)
+    
+    return render_template("multiplicativo.html", 
+                         xo=xo, t=t, g=g, n=n,
                          resultados_pruebas=resultados_pruebas)
 
 
