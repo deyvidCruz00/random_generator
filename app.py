@@ -8,6 +8,7 @@ from modules.generadores.distribucion_uniforme import distribucion_uniforme, gra
 #from modules.pruebas import media as prueba_media_mod
 
 import pandas as pd
+import json
 import io
 import matplotlib
 matplotlib.use('Agg')
@@ -290,6 +291,81 @@ def obtener_ri_endpoint(generador):
     else:
         return {"error": "Generador no válido"}
 
+def ejecutar_pruebas_internas(ri_numeros, alpha=0.05):
+    """
+    Ejecuta todas las pruebas estadísticas sobre los números Ri
+    """
+    pruebas_seleccionadas = {
+        "medias": True,
+        "varianza": True,
+        "chi": {"k": 8},
+        "kolmogorov": {"k": 10},
+        "poker": True,
+        "rachas": True
+    }
+    
+    try:
+        resultados = ejecutar_pruebas(ri_numeros, pruebas_seleccionadas, alpha)
+        return resultados
+    except Exception as e:
+        return {"error": f"Error ejecutando pruebas: {str(e)}"}
+
+def procesar_resultados_para_template(resultados_pruebas):
+    """
+    Procesa los resultados de pruebas (JSON strings) para que sean compatibles con los templates
+    """
+    resultados_procesados = {}
+    
+    for nombre_prueba, resultado_json in resultados_pruebas.items():
+        if nombre_prueba in ['error', 'mensaje_error']:
+            resultados_procesados[nombre_prueba] = resultado_json
+            continue
+            
+        try:
+            # Parsear el JSON string
+            resultado_dict = json.loads(resultado_json)
+            
+            # Crear un diccionario compatible con el template
+            resultado_procesado = {
+                'pasa': resultado_dict.get('isApproved') == 'True',
+                'test_name': resultado_dict.get('test_name', nombre_prueba),
+                'decision': resultado_dict.get('decision', ''),
+                'isApproved': resultado_dict.get('isApproved', 'False')
+            }
+            
+            # Agregar campos específicos según el tipo de prueba
+            if 'estadistico' in resultado_dict:
+                resultado_procesado['estadistico'] = float(resultado_dict['estadistico'])
+            elif 'z' in resultado_dict:
+                resultado_procesado['estadistico'] = float(resultado_dict['z'])
+            elif 'chi2_total' in resultado_dict.get('statistics', {}):
+                resultado_procesado['estadistico'] = float(resultado_dict['statistics']['chi2_total'])
+            elif 'Chi2_calculado' in resultado_dict.get('statistics', {}):
+                resultado_procesado['estadistico'] = float(resultado_dict['statistics']['Chi2_calculado'])
+                
+            if 'valor_critico' in resultado_dict:
+                resultado_procesado['valor_critico'] = float(resultado_dict['valor_critico'])
+            elif 'critical_value' in resultado_dict.get('statistics', {}):
+                resultado_procesado['valor_critico'] = float(resultado_dict['statistics']['critical_value'])
+            elif 'chi2_critico' in resultado_dict.get('statistics', {}):
+                resultado_procesado['valor_critico'] = float(resultado_dict['statistics']['chi2_critico'])
+                
+            if 'p_value' in resultado_dict:
+                resultado_procesado['p_value'] = float(resultado_dict['p_value'])
+                
+            resultados_procesados[nombre_prueba] = resultado_procesado
+            
+        except (json.JSONDecodeError, ValueError, KeyError) as e:
+            # Si hay error al procesar, crear un resultado por defecto
+            resultados_procesados[nombre_prueba] = {
+                'pasa': False,
+                'test_name': nombre_prueba,
+                'decision': 'Error al procesar resultado',
+                'isApproved': 'False'
+            }
+    
+    return resultados_procesados
+
 def obtener_ri():
     """Función para obtener los Ri del último método de generación usado"""
     global ultimo_metodo_generacion, ri_cuadrados, ri_lineal, ri_multiplicativo
@@ -310,6 +386,7 @@ def distribucion_normal():
     media = 0.0
     desviacion = 1.0
     metodo_usado = ultimo_metodo_generacion
+    resultados_pruebas = None
     
     # Verificar si hay datos disponibles
     ri_disponibles = obtener_ri()
@@ -327,19 +404,46 @@ def distribucion_normal():
         media = float(request.form.get("media", 0.0))
         desviacion = float(request.form.get("desviacion", 1.0))
         
-        # Usar los Ri del último método generado
-        df_normal = distribucion_normal_inversa(ri_disponibles, desviacion, media)
-        table = df_normal.to_html(classes="table table-bordered table-striped text-center", index=False)
+        # Ejecutar pruebas estadísticas primero
+        resultados_pruebas_raw = ejecutar_pruebas_internas(ri_disponibles)
         
-        # Generar gráfico
-        grafico = graficar_distribucion_normal(ri_disponibles, desviacion, media)
+        # Procesar resultados para el template
+        resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+        
+        # Verificar si alguna prueba pasó
+        if "error" not in resultados_pruebas_raw:
+            # Validar que al menos una prueba haya pasado
+            pruebas_pasaron = False
+            for nombre_prueba, resultado_json in resultados_pruebas_raw.items():
+                try:
+                    # Parsear el JSON string para obtener el diccionario
+                    resultado_dict = json.loads(resultado_json)
+                    # Verificar si la prueba fue aprobada
+                    if resultado_dict.get("isApproved") == "True":
+                        pruebas_pasaron = True
+                        break
+                except (json.JSONDecodeError, AttributeError):
+                    # Si hay error al parsear, continuar con la siguiente prueba
+                    continue
+            
+            if pruebas_pasaron:
+                # Al menos una prueba pasó, proceder con el cálculo
+                df_normal = distribucion_normal_inversa(ri_disponibles, desviacion, media)
+                table = df_normal.to_html(classes="table table-bordered table-striped text-center", index=False)
+                
+                # Generar gráfico
+                grafico = graficar_distribucion_normal(ri_disponibles, desviacion, media)
+            else:
+                # Ninguna prueba pasó, mostrar mensaje de error
+                resultados_pruebas["mensaje_error"] = "No se puede proceder con la distribución normal porque ninguna prueba estadística fue aprobada. Los números generados no cumplen con los criterios de aleatoriedad."
 
     return render_template("distribucion_normal.html", 
                          grafico=grafico, 
                          table=table, 
                          media=media, 
                          desviacion=desviacion,
-                         metodo_usado=metodo_usado)
+                         metodo_usado=metodo_usado,
+                         resultados_pruebas=resultados_pruebas)
 
 
 
@@ -350,6 +454,7 @@ def distribucion_uniforme_endpoint():
     min_val = 0.0
     max_val = 1.0
     metodo_usado = ultimo_metodo_generacion
+    resultados_pruebas = None
     
     # Verificar si hay datos disponibles
     ri_disponibles = obtener_ri()
@@ -367,19 +472,46 @@ def distribucion_uniforme_endpoint():
         min_val = float(request.form.get("min_val", 0.0))
         max_val = float(request.form.get("max_val", 1.0))
         
-        # Usar los Ri del último método generado
-        df_uniforme, ni_values = distribucion_uniforme(ri_disponibles, min_val, max_val)
-        table = df_uniforme.to_html(classes="table table-bordered table-striped text-center", index=False)
+        # Ejecutar pruebas estadísticas primero
+        resultados_pruebas_raw = ejecutar_pruebas_internas(ri_disponibles)
         
-        # Generar gráfico
-        grafico = graficar_distribucion_uniforme(ri_disponibles, ni_values, min_val, max_val)
+        # Procesar resultados para el template
+        resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+        
+        # Verificar si alguna prueba pasó
+        if "error" not in resultados_pruebas_raw:
+            # Validar que al menos una prueba haya pasado
+            pruebas_pasaron = False
+            for nombre_prueba, resultado_json in resultados_pruebas_raw.items():
+                try:
+                    # Parsear el JSON string para obtener el diccionario
+                    resultado_dict = json.loads(resultado_json)
+                    # Verificar si la prueba fue aprobada
+                    if resultado_dict.get("isApproved") == "True":
+                        pruebas_pasaron = True
+                        break
+                except (json.JSONDecodeError, AttributeError):
+                    # Si hay error al parsear, continuar con la siguiente prueba
+                    continue
+            
+            if pruebas_pasaron:
+                # Al menos una prueba pasó, proceder con el cálculo
+                df_uniforme, ni_values = distribucion_uniforme(ri_disponibles, min_val, max_val)
+                table = df_uniforme.to_html(classes="table table-bordered table-striped text-center", index=False)
+                
+                # Generar gráfico
+                grafico = graficar_distribucion_uniforme(ri_disponibles, ni_values, min_val, max_val)
+            else:
+                # Ninguna prueba pasó, mostrar mensaje de error
+                resultados_pruebas["mensaje_error"] = "No se puede proceder con la distribución uniforme porque ninguna prueba estadística fue aprobada. Los números generados no cumplen con los criterios de aleatoriedad."
 
     return render_template("distribucion_uniforme.html", 
                          grafico=grafico, 
                          table=table, 
                          min_val=min_val, 
                          max_val=max_val,
-                         metodo_usado=metodo_usado)
+                         metodo_usado=metodo_usado,
+                         resultados_pruebas=resultados_pruebas)
 
 
 if __name__ == "__main__":

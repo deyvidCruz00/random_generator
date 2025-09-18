@@ -38,6 +38,7 @@ def prueba_de_varianza(datos, alpha=0.05, mu_esperada=0.5):
         decision = "Pasa la prueba de varianza."
     else:
         decision = "No pasa la prueba de varianza."
+    print(decision)
 
     # Construcción del resultado con todas las variables
     resultado = {

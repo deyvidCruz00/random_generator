@@ -24,6 +24,7 @@ def prueba_de_medias(datos, alpha=0.05, mu_esperada=0.5):
         decision = "Pasa la prueba de medias."
     else:
         decision = "No pasa la prueba de medias."
+    print(decision)
 
     # Construcción del diccionario con todas las variables
     resultado = {
