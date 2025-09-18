@@ -13,18 +13,6 @@
         <label>Desviación estándar (σ):</label>
         <input type="number" step="any" name="desviacion" class="form-control" required value="{{ desviacion }}">
       </div>
-      <div class="mb-3">
-        <label>Valor mínimo:</label>
-        <input type="number" step="any" name="min" class="form-control" required value="{{ min_val }}">
-      </div>
-      <div class="mb-3">
-        <label>Valor máximo:</label>
-        <input type="number" step="any" name="max" class="form-control" required value="{{ max_val }}">
-      </div>
-      <div class="mb-3">
-        <label>Iteraciones:</label>
-        <input type="number" name="iteraciones" class="form-control" required value="{{ n }}">
-      </div>
       <button type="submit" name="accion" value="calcular" class="btn btn-primary">Calcular</button>
       <button formaction="/exportar_normal_csv" formmethod="POST" class="btn btn-success">Exportar CSV</button>
       <button formaction="/grafico_normal" formmethod="POST" class="btn btn-info">Ver Gráfico</button>
@@ -37,9 +25,6 @@
       <h5 class="card-title">Parámetros actuales</h5>
       <p><strong>Media (μ):</strong> <span id="preview_media">{{ media }}</span></p>
       <p><strong>Desviación estándar (σ):</strong> <span id="preview_desviacion">{{ desviacion }}</span></p>
-      <p><strong>Valor mínimo:</strong> <span id="preview_min">{{ min_val }}</span></p>
-      <p><strong>Valor máximo:</strong> <span id="preview_max">{{ max_val }}</span></p>
-      <p><strong>Iteraciones:</strong> <span id="preview_n">{{ n }}</span></p>
     </div>
   </div>
 </div>

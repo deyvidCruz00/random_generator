@@ -5,13 +5,10 @@ import numpy as np
 import io
 import base64
 
-from modules.generadores.congruencia_lineal import generar
 
-
-def distribucion_normal_inversa(uniformes,std_dev, num_samples, mean, semilla, k, c, g, a=0, b=1):
+def distribucion_normal_inversa(uniformes,std_dev, mean):
     # Generar uniformes con tu congruencial lineal
     # print(uniformes)
-
     registros = []
     for i, u in enumerate(uniformes):
         # Inversa de la CDF de la normal (usa la f.d.p. integrada)
@@ -24,11 +21,10 @@ def distribucion_normal_inversa(uniformes,std_dev, num_samples, mean, semilla, k
 
     return pd.DataFrame(registros)
 
-def graficar_distribucion_normal(df_uniformes,std_dev, mean, num_samples, semilla, k, c, g):
-    from modules.generadores.distribucion_normal import distribucion_normal_inversa
+def graficar_distribucion_normal(df_uniformes,std_dev, mean):
 
     # Generar datos
-    df = distribucion_normal_inversa(df_uniformes,std_dev, num_samples, mean, semilla, k, c, g)
+    df = distribucion_normal_inversa(df_uniformes,std_dev, mean)
     muestras = df["Ni"].values
 
     plt.figure(figsize=(8, 5))

@@ -3,6 +3,8 @@ from modules.pruebas.dispatcher import ejecutar_pruebas
 from modules.generadores.minimos_cuadrados import generar as generar_mc
 from modules.generadores.congruencia_lineal import generar as generar_cl
 from modules.generadores.congruencia_multi import generar as generar_cm
+from modules.generadores.distribucion_normal import distribucion_normal_inversa, graficar_distribucion_normal
+from modules.generadores.distribucion_uniforme import distribucion_uniforme, graficar_distribucion_uniforme
 #from modules.pruebas import media as prueba_media_mod
 
 import pandas as pd
@@ -18,6 +20,9 @@ import io
 ri_cuadrados = []
 ri_lineal = []
 ri_multiplicativo = []
+
+# Variable global para rastrear el último método de generación usado
+ultimo_metodo_generacion = None
 
 app = Flask(__name__)
 
@@ -63,8 +68,9 @@ def cuadrados():
         #df = generar_mc(int(semilla), int(float(n)), float(min_val), float(max_val))
         df = generar_mc(int(semilla), int(float(n)))
         # Mapear los valores Ri a variable global
-        global ri_cuadrados
+        global ri_cuadrados, ultimo_metodo_generacion
         ri_cuadrados = df['Ri'].tolist()
+        ultimo_metodo_generacion = "cuadrados"
         data = df.to_html(classes="table table-bordered table-striped", index=False)
 
     return render_template("cuadrados.html", 
@@ -98,8 +104,9 @@ def lineal():
         # df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)), float(min_val), float(max_val))
         df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)),0,0)
         # Mapear los valores Ri a variable global
-        global ri_lineal
+        global ri_lineal, ultimo_metodo_generacion
         ri_lineal = df['Ri'].tolist()
+        ultimo_metodo_generacion = "lineal"
         data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
 
     return render_template("lineal.html", 
@@ -135,8 +142,9 @@ def multiplicativo():
         # df = generar_cm(int(xo), int(t), int(g), int(float(n)), float(min_val), float(max_val))
         df = generar_cm(int(xo), int(t), int(g), int(float(n)))
         # Mapear los valores Ri a variable global
-        global ri_multiplicativo
+        global ri_multiplicativo, ultimo_metodo_generacion
         ri_multiplicativo = df['Ri'].tolist()
+        ultimo_metodo_generacion = "multiplicativo"
         data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
 
     return render_template("multiplicativo.html",
@@ -272,7 +280,7 @@ def grafico():
     return send_file(img, mimetype="image/png")
 
 @app.route("/obtener_ri/<generador>")
-def obtener_ri(generador):
+def obtener_ri_endpoint(generador):
     if generador == "cuadrados":
         return {"ri": ri_cuadrados}
     elif generador == "lineal":
@@ -281,6 +289,98 @@ def obtener_ri(generador):
         return {"ri": ri_multiplicativo}
     else:
         return {"error": "Generador no válido"}
+
+def obtener_ri():
+    """Función para obtener los Ri del último método de generación usado"""
+    global ultimo_metodo_generacion, ri_cuadrados, ri_lineal, ri_multiplicativo
+    
+    if ultimo_metodo_generacion == "cuadrados":
+        return ri_cuadrados
+    elif ultimo_metodo_generacion == "lineal":
+        return ri_lineal
+    elif ultimo_metodo_generacion == "multiplicativo":
+        return ri_multiplicativo
+    else:
+        return []
+
+@app.route("/distribucion_normal", methods=["GET", "POST"])
+def distribucion_normal():
+    grafico = None
+    table = None
+    media = 0.0
+    desviacion = 1.0
+    metodo_usado = ultimo_metodo_generacion
+    
+    # Verificar si hay datos disponibles
+    ri_disponibles = obtener_ri()
+    if not ri_disponibles:
+        mensaje_error = "No hay datos de números aleatorios disponibles. Genera números primero usando algún método."
+        return render_template("distribucion_normal.html", 
+                             grafico=grafico, 
+                             table=table, 
+                             media=media, 
+                             desviacion=desviacion,
+                             metodo_usado=metodo_usado,
+                             error=mensaje_error)
+
+    if request.method == "POST" and request.form.get("accion") == "calcular":
+        media = float(request.form.get("media", 0.0))
+        desviacion = float(request.form.get("desviacion", 1.0))
+        
+        # Usar los Ri del último método generado
+        df_normal = distribucion_normal_inversa(ri_disponibles, desviacion, media)
+        table = df_normal.to_html(classes="table table-bordered table-striped text-center", index=False)
+        
+        # Generar gráfico
+        grafico = graficar_distribucion_normal(ri_disponibles, desviacion, media)
+
+    return render_template("distribucion_normal.html", 
+                         grafico=grafico, 
+                         table=table, 
+                         media=media, 
+                         desviacion=desviacion,
+                         metodo_usado=metodo_usado)
+
+
+
+@app.route("/distribucion_uniforme", methods=["GET", "POST"])
+def distribucion_uniforme_endpoint():
+    grafico = None
+    table = None
+    min_val = 0.0
+    max_val = 1.0
+    metodo_usado = ultimo_metodo_generacion
+    
+    # Verificar si hay datos disponibles
+    ri_disponibles = obtener_ri()
+    if not ri_disponibles:
+        mensaje_error = "No hay datos de números aleatorios disponibles. Genera números primero usando algún método."
+        return render_template("distribucion_uniforme.html", 
+                             grafico=grafico, 
+                             table=table, 
+                             min_val=min_val, 
+                             max_val=max_val,
+                             metodo_usado=metodo_usado,
+                             error=mensaje_error)
+
+    if request.method == "POST" and request.form.get("accion") == "calcular":
+        min_val = float(request.form.get("min_val", 0.0))
+        max_val = float(request.form.get("max_val", 1.0))
+        
+        # Usar los Ri del último método generado
+        df_uniforme, ni_values = distribucion_uniforme(ri_disponibles, min_val, max_val)
+        table = df_uniforme.to_html(classes="table table-bordered table-striped text-center", index=False)
+        
+        # Generar gráfico
+        grafico = graficar_distribucion_uniforme(ri_disponibles, ni_values, min_val, max_val)
+
+    return render_template("distribucion_uniforme.html", 
+                         grafico=grafico, 
+                         table=table, 
+                         min_val=min_val, 
+                         max_val=max_val,
+                         metodo_usado=metodo_usado)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

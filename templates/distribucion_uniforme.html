@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Generador - Distribución Uniforme</h2>
+
+{% if metodo_usado %}
+<div class="alert alert-info">
+  <strong>Usando datos del método:</strong> {{ metodo_usado.title() }}
+</div>
+{% endif %}
+
+{% if error %}
+<div class="alert alert-danger">
+  {{ error }}
+  <br>
+  <a href="/" class="btn btn-primary mt-2">Ir a generadores</a>
+</div>
+{% else %}
+
+<div class="row">
+  <!-- Formulario -->
+  <div class="col-md-6">
+    <form method="POST">
+      <div class="mb-3">
+        <label>Valor mínimo (a):</label>
+        <input type="number" step="any" name="min_val" class="form-control" required value="{{ min_val }}">
+      </div>
+      <div class="mb-3">
+        <label>Valor máximo (b):</label>
+        <input type="number" step="any" name="max_val" class="form-control" required value="{{ max_val }}">
+      </div>
+      <button type="submit" name="accion" value="calcular" class="btn btn-primary">Calcular</button>
+      <button formaction="/exportar_uniforme_csv" formmethod="POST" class="btn btn-success">Exportar CSV</button>
+      <button formaction="/grafico_uniforme" formmethod="POST" class="btn btn-info">Ver Gráfico</button>
+    </form>
+  </div>
+
+  <!-- Vista previa parámetros -->
+  <div class="col-md-6">
+    <div class="card p-3 shadow-sm">
+      <h5 class="card-title">Parámetros actuales</h5>
+      <p><strong>Valor mínimo (a):</strong> <span id="preview_min_val">{{ min_val }}</span></p>
+      <p><strong>Valor máximo (b):</strong> <span id="preview_max_val">{{ max_val }}</span></p>
+      <p><strong>Intervalo:</strong> [<span id="preview_min_val2">{{ min_val }}</span>, <span id="preview_max_val2">{{ max_val }}</span>]</p>
+    </div>
+  </div>
+</div>
+
+{% if grafico %}
+<hr>
+<h3>Gráfico</h3>
+<img src="data:image/png;base64,{{ grafico }}" class="img-fluid" alt="Gráfico distribución uniforme">
+{% endif %}
+
+{% if table %}
+<hr>
+<h3>Resultados</h3>
+{{ table|safe }}
+{% endif %}
+
+{% endif %}
+
+<script>
+  // Actualizar en tiempo real los parámetros ingresados
+  document.querySelectorAll("input[name=min_val], input[name=max_val]").forEach(input => {
+    input.addEventListener("input", () => {
+      const minVal = document.querySelector("input[name=min_val]").value;
+      const maxVal = document.querySelector("input[name=max_val]").value;
+      document.getElementById("preview_min_val").textContent = minVal;
+      document.getElementById("preview_max_val").textContent = maxVal;
+      document.getElementById("preview_min_val2").textContent = minVal;
+      document.getElementById("preview_max_val2").textContent = maxVal;
+    });
+  });
+</script>
+{% endblock %}
