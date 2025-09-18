@@ -64,7 +64,6 @@ def prueba_rachas(muestra, alpha=0.05, mediana_teorica=0.5):
         "decision": "Pasa la prueba de rachas." if cumple else "No pasa la prueba de rachas.",
         "isApproved": str(cumple)
     }
-    print(result["decision"])
     
     return json.dumps(result, indent=4)
 

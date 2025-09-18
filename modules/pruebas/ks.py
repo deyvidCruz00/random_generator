@@ -102,6 +102,5 @@ def kolmogorov_smirnov_test(data, k=10, alpha=0.05):
         "decision": "Pasa la prueba de ks." if max_diferencia <= critical_value else "No pasa la prueba de ks.",
         "isApproved": str(max_diferencia <= critical_value)
     }
-    print(resultado["decision"])
     
     return json.dumps(resultado, indent=4, ensure_ascii=False)

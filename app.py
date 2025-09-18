@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template, send_file
+import time
 from modules.pruebas.dispatcher import ejecutar_pruebas
 from modules.generadores.minimos_cuadrados import generar as generar_mc
 from modules.generadores.congruencia_lineal import generar as generar_cl
@@ -76,16 +77,51 @@ def cuadrados():
     if request.method == "POST":
         semilla = request.form["semilla"]
         n = request.form["iteraciones"]
-        # min_val = request.form["min"]
-        # max_val = request.form["max"]
-
-        #df = generar_mc(int(semilla), int(float(n)), float(min_val), float(max_val))
-        df = generar_mc(int(semilla), int(float(n)))
+        n_int = int(float(n))
+        df = generar_mc(int(semilla), n_int)
         # Mapear los valores Ri a variable global
         global ri_cuadrados, ultimo_metodo_generacion
         ri_cuadrados = df['Ri'].tolist()
         ultimo_metodo_generacion = "cuadrados"
-        data = df.to_html(classes="table table-bordered table-striped", index=False)
+        
+        # Formatear la columna Ri para eliminar ceros innecesarios
+        df['Ri'] = df['Ri'].apply(lambda x: f"{x:g}")
+        
+        tabla_mensaje = ""
+        if n_int > 10000:
+            # Mostrar solo los primeros 500, algunos del medio y los últimos 500
+            df_muestra = df.head(500).copy()
+            
+            # Agregar algunos del medio
+            if n_int > 2000:
+                medio_inicio = n_int // 2 - 250
+                medio_fin = n_int // 2 + 250
+                df_medio = df.iloc[medio_inicio:medio_fin].copy()
+                df_muestra = pd.concat([df_muestra, df_medio])
+            
+            # Agregar los últimos
+            df_final = df.tail(500).copy()
+            df_muestra = pd.concat([df_muestra, df_final])
+            
+            # Remover duplicados y ordenar
+            df_muestra = df_muestra.drop_duplicates().sort_values('i')
+            
+            data = df_muestra.to_html(classes="table table-bordered table-striped", index=False)
+            tabla_mensaje = f'''
+            <div class="alert alert-info mb-3">
+                <h5><i class="fas fa-info-circle"></i> Conjunto grande detectado</h5>
+                <p><strong>Total generado:</strong> {n_int:,} números</p>
+                <p><strong>Mostrando:</strong> {len(df_muestra):,} valores de muestra (primeros 500 + algunos del medio + últimos 500)</p>
+                <p><small>Los {n_int:,} números completos están disponibles para exportar y se usaron para las pruebas estadísticas.</small></p>
+            </div>
+            '''
+        else:
+            # Para conjuntos pequeños, mostrar todo
+            data = df.to_html(classes="table table-bordered table-striped", index=False)
+        
+        # Agregar el mensaje antes de la tabla
+        if tabla_mensaje:
+            data = tabla_mensaje + data
         
         # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
         if ri_cuadrados:
@@ -110,10 +146,7 @@ def lineal():
     g = ""
     n = ""
     resultados_pruebas = None
-    # min_val = ""
-    # max_val = ""
-
-    # Si hay una semilla pre-cargada y es GET, usar esa semilla
+    
     if request.method == "GET" and semilla_seleccionada_lineal:
         xo = str(semilla_seleccionada_lineal)
         # Limpiar la semilla después de usarla
@@ -125,17 +158,56 @@ def lineal():
         c = request.form["c"]
         g = request.form["g"]
         n = request.form["iteraciones"]
-        # min_val = request.form["min"]
-        # max_val = request.form["max"]
 
+        n_int = int(float(n))
+        
         # Aquí llamamos al generador de congruencia lineal
-        # df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)), float(min_val), float(max_val))
-        df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)),0,0)
+        df = generar_cl(int(xo), int(k), int(c), int(g), n_int)
+        
         # Mapear los valores Ri a variable global
         global ri_lineal, ultimo_metodo_generacion
         ri_lineal = df['Ri'].tolist()
         ultimo_metodo_generacion = "lineal"
-        data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
+        
+        # Formatear la columna Ri para eliminar ceros innecesarios
+        df['Ri'] = df['Ri'].apply(lambda x: f"{x:g}")
+
+        # OPTIMIZACIÓN: Para conjuntos grandes, mostrar solo una muestra
+        tabla_mensaje = ""
+        if n_int > 10000:
+            # Mostrar solo los primeros 500, algunos del medio y los últimos 500
+            df_muestra = df.head(500).copy()
+            
+            # Agregar algunos del medio
+            if n_int > 2000:
+                medio_inicio = n_int // 2 - 250
+                medio_fin = n_int // 2 + 250
+                df_medio = df.iloc[medio_inicio:medio_fin].copy()
+                df_muestra = pd.concat([df_muestra, df_medio])
+            
+            # Agregar los últimos
+            df_final = df.tail(500).copy()
+            df_muestra = pd.concat([df_muestra, df_final])
+            
+            # Remover duplicados y ordenar
+            df_muestra = df_muestra.drop_duplicates().sort_values('i')
+            
+            data = df_muestra.to_html(classes="table table-bordered table-striped text-center", index=False)
+            tabla_mensaje = f'''
+            <div class="alert alert-info mb-3">
+                <h5><i class="fas fa-info-circle"></i> Conjunto grande detectado</h5>
+                <p><strong>Total generado:</strong> {n_int:,} números</p>
+                <p><strong>Mostrando:</strong> {len(df_muestra):,} valores de muestra (primeros 500 + algunos del medio + últimos 500)</p>
+                <p><small>Los {n_int:,} números completos están disponibles para exportar y se usaron para las pruebas estadísticas.</small></p>
+            </div>
+            '''
+        else:
+            # Para conjuntos pequeños, mostrar todo
+            data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
+        
+        # Agregar el mensaje antes de la tabla
+        if tabla_mensaje:
+            data = tabla_mensaje + data
         
         # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
         if ri_lineal:
@@ -150,8 +222,6 @@ def lineal():
                            g=g, 
                            n=n,
                            resultados_pruebas=resultados_pruebas)
-                        #    min_val=min_val, 
-                        #    max_val=max_val)
 
 @app.route("/multiplicativo", methods=["GET", "POST"])
 def multiplicativo():
@@ -163,8 +233,6 @@ def multiplicativo():
     g = ""
     n = ""
     resultados_pruebas = None
-    # min_val = ""
-    # max_val = ""
 
     # Si hay una semilla pre-cargada y es GET, usar esa semilla
     if request.method == "GET" and semilla_seleccionada_multiplicativo:
@@ -177,17 +245,55 @@ def multiplicativo():
         t = request.form["t"]
         g = request.form["g"]
         n = request.form["iteraciones"]
-        # min_val = request.form["min"]
-        # max_val = request.form["max"]
 
+        n_int = int(float(n))
+        
         # Llamamos al generador de congruencia multiplicativa
-        # df = generar_cm(int(xo), int(t), int(g), int(float(n)), float(min_val), float(max_val))
-        df = generar_cm(int(xo), int(t), int(g), int(float(n)))
+        df = generar_cm(int(xo), int(t), int(g), n_int)
         # Mapear los valores Ri a variable global
         global ri_multiplicativo, ultimo_metodo_generacion
         ri_multiplicativo = df['Ri'].tolist()
         ultimo_metodo_generacion = "multiplicativo"
-        data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
+        
+        # Formatear la columna Ri para eliminar ceros innecesarios
+        df['Ri'] = df['Ri'].apply(lambda x: f"{x:g}")
+        
+        # ⚡ OPTIMIZACIÓN: Para conjuntos grandes, mostrar solo una muestra
+        tabla_mensaje = ""
+        if n_int > 10000:
+            # Mostrar solo los primeros 500, algunos del medio y los últimos 500
+            df_muestra = df.head(500).copy()
+            
+            # Agregar algunos del medio
+            if n_int > 2000:
+                medio_inicio = n_int // 2 - 250
+                medio_fin = n_int // 2 + 250
+                df_medio = df.iloc[medio_inicio:medio_fin].copy()
+                df_muestra = pd.concat([df_muestra, df_medio])
+            
+            # Agregar los últimos
+            df_final = df.tail(500).copy()
+            df_muestra = pd.concat([df_muestra, df_final])
+            
+            # Remover duplicados y ordenar
+            df_muestra = df_muestra.drop_duplicates().sort_values('i')
+            
+            data = df_muestra.to_html(classes="table table-bordered table-striped text-center", index=False)
+            tabla_mensaje = f'''
+            <div class="alert alert-info mb-3">
+                <h5><i class="fas fa-info-circle"></i> Conjunto grande detectado</h5>
+                <p><strong>Total generado:</strong> {n_int:,} números</p>
+                <p><strong>Mostrando:</strong> {len(df_muestra):,} valores de muestra (primeros 500 + algunos del medio + últimos 500)</p>
+                <p><small>Los {n_int:,} números completos están disponibles para exportar y se usaron para las pruebas estadísticas.</small></p>
+            </div>
+            '''
+        else:
+            # Para conjuntos pequeños, mostrar todo
+            data = df.to_html(classes="table table-bordered table-striped text-center", index=False)
+        
+        # Agregar el mensaje antes de la tabla
+        if tabla_mensaje:
+            data = tabla_mensaje + data
         
         # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
         if ri_multiplicativo:
@@ -202,8 +308,6 @@ def multiplicativo():
                            g=g,
                            n=n,
                            resultados_pruebas=resultados_pruebas)
-                        #    min_val=min_val,
-                        #    max_val=max_val)
 
 
 # Exportar CSV
@@ -211,8 +315,6 @@ def multiplicativo():
 def exportar_csv():
     semilla = int(request.form["semilla"])
     n = int(request.form["iteraciones"])
-    # min_val = float(request.form["min"])
-    # max_val = float(request.form["max"])
 
     df = generar_mc(semilla, n)
 
@@ -232,8 +334,6 @@ def exportar_csv_congruencial_lineal():
     c = request.form["c"]
     g = request.form["g"]
     n = request.form["iteraciones"]
-    # min_val = request.form["min"]
-    # max_val = request.form["max"]
 
         # Aquí llamamos al generador de congruencia lineal
     df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)), 0,0)
@@ -253,8 +353,6 @@ def exportar_csv_congruencial_multiplicativa():
     t = request.form["t"]
     g = request.form["g"]
     n = request.form["iteraciones"]
-    # min_val = request.form["min"]
-    # max_val = request.form["max"]
 
     df = generar_cm(int(xo), int(t), int(g), int(float(n)), 0,0)
     buffer = io.StringIO()

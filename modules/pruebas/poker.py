@@ -88,6 +88,5 @@ def poker_test_json(datos, alpha=0.05):
         "decision": "Pasa la prueba de poker." if suma_chi2 <= chi2_critical else "No pasa la prueba de poker.",
         "isApproved": str(suma_chi2 <= chi2_critical)
     }
-    print(result["decision"])
 
     return json.dumps(result, indent=4, ensure_ascii=False)

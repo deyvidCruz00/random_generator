@@ -13,8 +13,6 @@ def generar(x0: int, t: int, g: int, n: int, min_value: float = 0, max_value: fl
     for i in range(n):
         xi = (a * xi) % m
         ri = truncar(xi / (m - 1),5)   # Normalización
-        #ni = truncar(min_value + (max_value - min_value) * ri,5)  # Escalamiento
-        # data.append([i + 1, xi, round(ri, 4), round(ni, 4)])
         data.append([i + 1, xi, ri])
 
     # Convertir en DataFrame

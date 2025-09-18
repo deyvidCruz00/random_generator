@@ -51,7 +51,6 @@ def prueba_chi_cuadrado(datos, k=8, alpha=0.05):
         "decision": "Pasa la prueba chi-cuadrado." if chi2_total <= chi2_critico else "No pasa la prueba chi-cuadrado.",
         "isApproved": str(chi2_total <= chi2_critico)
     }
-    print(resultado["decision"])
 
     for i in range(k):
         resultado["intervals_data"].append({

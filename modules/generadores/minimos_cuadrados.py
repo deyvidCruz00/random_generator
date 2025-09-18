@@ -9,9 +9,9 @@ def generar(seed, amount, a=0, b=10):
         ext = extraer_numero(x_cuadrado, int(math.log10(abs(x_cuadrado))) + 1)
         if ext is None:
             break  # No se puede extraer, termina la secuencia
-        ri = truncar(ext / 10000, 5)
-        # ni = truncar(a + (b - a) * ri, 5)
-
+        
+        ri = truncar_decimales_inteligente(ext / 10000)
+        
         registros.append({
             "i": i,
             "Xi": x_i,
@@ -50,6 +50,28 @@ def extraer_numero(valor_c, valor_d):
 def truncar(n, decimales=0):
     factor = 10.0 ** decimales
     return int(n * factor) / factor
+
+def truncar_decimales_inteligente(numero):
+    """
+    Trunca a máximo 5 decimales, pero elimina ceros innecesarios al final.
+    Ejemplos:
+    - 0.51100 -> 0.511
+    - 0.50000 -> 0.5
+    - 0.12345 -> 0.12345
+    """
+    # Truncar a 5 decimales máximo usando truncamiento, no redondeo
+    factor = 10.0 ** 5
+    truncado = int(numero * factor) / factor
+    
+    # Convertir a string para eliminar ceros trailing
+    resultado_str = f"{truncado:.5f}".rstrip('0').rstrip('.')
+    
+    # Si queda vacío después del punto, agregar un 0
+    if resultado_str.endswith('.'):
+        resultado_str = resultado_str[:-1]
+    
+    # Convertir de vuelta a float
+    return float(resultado_str)
 
 # # Ejemplo de uso
 # df = generar(2222, 50, a=5, b=15)  # puedes cambiar a y b
