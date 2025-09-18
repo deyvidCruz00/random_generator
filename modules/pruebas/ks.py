@@ -26,10 +26,6 @@ def ks_critical_classic_table(n, alpha):
     
     return c_alpha / np.sqrt(n)
 
-def truncar(num, decimales=5):
-    factor = 10.0 ** decimales
-    return int(num * factor) / factor
-
 def kolmogorov_smirnov_test(data, k=10, alpha=0.05):
     n = len(data)
     
@@ -103,20 +99,8 @@ def kolmogorov_smirnov_test(data, k=10, alpha=0.05):
             "max_difference": max_diferencia, 
             "critical_value": critical_value
         },
-        "decision": "pasa la prueba" if max_diferencia <= critical_value else "no pasa la prueba"
+        "decision": "Pasa la prueba de ks." if max_diferencia <= critical_value else "No pasa la prueba de ks.",
+        "isApproved": str(max_diferencia <= critical_value)
     }
     
     return json.dumps(resultado, indent=4, ensure_ascii=False)
-
-# Ejemplo de uso con tus datos
-if __name__ == "__main__":
-    datos_str = "0,65516114 0,53701667 0,05697293 0,51775919 0,71467019 0,08172166 0,89613258 0,54189652 0,40455124 0,01066283 0,87110388 0,3281254 0,45500566 0,01730704 0,21659212 0,64103245 0,03743258 0,95634111 0,26592891 0,52502441 0,10911019 0,13742832 0,74915092 0,91857336 0,13611925 0,00660023 0,85685072 0,07533873 0,48251404 0,83777623 0,52223382 0,24647604 0,16622532 0,87189949 0,91607754 0,65321761 0,31097361 0,54335514 0,29750588 0,45247067 0,270814 0,41232463 0,93488253 0,19651657 0,40469919 0,62746595 0,00934499 0,11210389 0,95380576 0,61504508"
-    data = [float(x.replace(',', '.')) for x in datos_str.split()]
-    
-    print(f"Total de datos: {len(data)}")
-    print(f"Datos ordenados (primeros 5): {sorted(data)[:5]}")
-    print(f"Datos ordenados (últimos 5): {sorted(data)[-5:]}")
-    print()
-    
-    resultado = kolmogorov_smirnov_test(data)
-    print(resultado)
