@@ -21,9 +21,9 @@ def prueba_de_medias(datos, alpha=0.05, mu_esperada=0.5):
 
     # Decisión
     if limite_inferior <= media_muestra <= limite_superior:
-        decision = "No se rechaza H0 (la media esperada coincide con la muestral)."
+        decision = "Pasa la prueba de medias."
     else:
-        decision = "Se rechaza H0 (la media esperada difiere de la muestral)."
+        decision = "No pasa la prueba de medias."
 
     # Construcción del diccionario con todas las variables
     resultado = {
@@ -36,16 +36,9 @@ def prueba_de_medias(datos, alpha=0.05, mu_esperada=0.5):
         "error": error,
         "limite_inferior": limite_inferior,
         "limite_superior": limite_superior,
-        "decision": decision
+        "decision": decision,
+        "isApproved": str(limite_inferior <= media_muestra <= limite_superior)
     }
 
     # Retornar en formato JSON
     return json.dumps(resultado, indent=4)
-
-
-# Ejemplo de uso
-np.random.seed(42)
-datos = np.random.uniform(0,1,50)
-
-resultado = prueba_de_medias(datos, alpha=0.05)
-print(resultado)

@@ -51,10 +51,12 @@
 
     .pruebas-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      grid-template-columns: 1fr;
+      /* siempre una columna */
       gap: 25px;
       margin-top: 30px;
     }
+
 
     .prueba-card {
       background: var(--secondary-color);
@@ -416,7 +418,7 @@
             },
             title: {
               display: true,
-              text: `Prueba Kolmogorov-Smirnov - D_máx = ${prueba.statistics.max_difference} (Crítico: ${prueba.statistics.critical_value})`,
+              text: `Prueba Kolmogorov-Smirnov - D_máx = ${prueba.statistics.max_difference.toFixed(5)} (Crítico: ${prueba.statistics.critical_value.toFixed(5)})`,
               color: temaHibrido.textColor,
               font: { size: 16, weight: 'bold' }
             },
@@ -730,18 +732,24 @@
 
         const resumen = document.createElement("p");
         resumen.textContent = "→ " + prueba.decision;
-        resumen.style.color = prueba.decision.includes("pasa") ||
+        resumen.style.color = prueba.decision.includes("Pasa") ||
           prueba.decision.includes("No se rechaza") ?
           temaHibrido.successColor : temaHibrido.errorColor;
         card.appendChild(resumen);
 
-        const chartContainer = document.createElement("div");
-        chartContainer.className = "chart-container";
-        chartContainer.style.height = "400px";
+        let chartContainer = null;
+        let canvas = null;
 
-        const canvas = document.createElement("canvas");
-        chartContainer.appendChild(canvas);
-        card.appendChild(chartContainer);
+        if (prueba.test_name !== "Prueba de Poker") {
+          chartContainer = document.createElement("div");
+          chartContainer.className = "chart-container";
+          chartContainer.style.height = "400px";
+
+          canvas = document.createElement("canvas");
+          chartContainer.appendChild(canvas);
+          card.appendChild(chartContainer);
+        }
+
 
         // Agregar información estadística detallada
         const stats = document.createElement("div");
@@ -751,29 +759,269 @@
           stats.innerHTML = `
         <div class="stat-item"><strong>n:</strong> ${prueba.n}</div>
         <div class="stat-item"><strong>Media esperada (μ₀):</strong> ${prueba.mu_esperada}</div>
-        <div class="stat-item"><strong>Media muestral (x̄):</strong> ${prueba.media_muestra.toFixed(6)}</div>
-        <div class="stat-item"><strong>Estadístico Z:</strong> ${prueba.z.toFixed(4)}</div>
-        <div class="stat-item"><strong>Error estándar:</strong> ${prueba.error.toFixed(6)}</div>
-        <div class="stat-item"><strong>Intervalo de confianza:</strong> [${prueba.limite_inferior.toFixed(4)}, ${prueba.limite_superior.toFixed(4)}]</div>
-      `;
-        } else if (prueba.test_name === "Prueba de Varianza") {
-          stats.innerHTML = `
-        <div class="stat-item"><strong>n:</strong> ${prueba.n}</div>
-        <div class="stat-item"><strong>Varianza muestral:</strong> ${prueba.varianza_muestral.toFixed(6)}</div>
-        <div class="stat-item"><strong>χ₁² (límite inferior):</strong> ${prueba.Xi1.toFixed(4)}</div>
-        <div class="stat-item"><strong>χ₂² (límite superior):</strong> ${prueba.Xi2.toFixed(4)}</div>
-        <div class="stat-item"><strong>Intervalo de confianza para σ²:</strong> [${prueba.limite_inferior.toFixed(6)}, ${prueba.limite_superior.toFixed(6)}]</div>
+        <div class="stat-item"><strong>Media muestral (x̄):</strong> ${prueba.media_muestra.toFixed(5)}</div>
+        <div class="stat-item"><strong>Estadístico Z:</strong> ${prueba.z.toFixed(5)}</div>
+        <div class="stat-item"><strong>Intervalo de confianza:</strong> [${prueba.limite_inferior.toFixed(5)}, ${prueba.limite_superior.toFixed(5)}]</div>
       `;
         } else if (prueba.test_name === "Prueba KS") {
+          stats.innerHTML = ""; // limpiar
+
+          const tabla = document.createElement("table");
+          tabla.style.width = "100%";
+          tabla.style.borderCollapse = "collapse";
+          tabla.style.marginTop = "10px";
+          tabla.style.fontFamily = "'Roboto Mono', monospace";
+          tabla.style.fontSize = "13px";
+          tabla.style.color = "#e2e8f0";
+
+          // Encabezados
+          const encabezados = [
+            "No", "Inicial", "Final",
+            "Frec.Obt", "F.Obt.A", "P.Obt",
+            "F.Esp.A", "P.Esp.A", "Dif"
+          ];
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          encabezados.forEach(h => {
+            const th = document.createElement("th");
+            th.textContent = h;
+            th.style.borderBottom = "2px solid #06b6d4";
+            th.style.padding = "6px";
+            th.style.textAlign = "center";
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          tabla.appendChild(thead);
+
+          // Filas de intervalos
+          const tbody = document.createElement("tbody");
+          prueba.intervals_data.forEach(row => {
+            const tr = document.createElement("tr");
+
+            [
+              row.No,
+              row.Inicial.toFixed(5),
+              row.Final.toFixed(5),
+              row.frecuencia_obt,
+              row.frecuencia_obt_acu,
+              row.P_Obt.toFixed(3),
+              row.frecuencia_esp_acu.toFixed(2),
+              row.P_Esp_A.toFixed(2),
+              row.Dif.toFixed(4)
+            ].forEach(val => {
+              const td = document.createElement("td");
+              td.textContent = val;
+              td.style.padding = "6px";
+              td.style.borderBottom = "1px solid #1e293b";
+              td.style.textAlign = "center";
+              tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+          });
+          tabla.appendChild(tbody);
+
+          // Resumen al final
+          const tfoot = document.createElement("tfoot");
+          [
+            ["DMAX", prueba.statistics.max_difference.toFixed(5)],
+            ["Crítico", prueba.statistics.critical_value.toFixed(5)],
+            ["Decisión", prueba.decision]
+          ].forEach(([label, val]) => {
+            const tr = document.createElement("tr");
+
+            const tdLabel = document.createElement("td");
+            tdLabel.colSpan = 8;
+            tdLabel.textContent = label;
+            tdLabel.style.textAlign = "right";
+            tdLabel.style.fontWeight = "bold";
+            tdLabel.style.padding = "6px";
+            tdLabel.style.borderTop = "2px solid #06b6d4";
+
+            const tdVal = document.createElement("td");
+            tdVal.textContent = val;
+            tdVal.style.textAlign = "center";
+            tdVal.style.fontWeight = "bold";
+            tdVal.style.padding = "6px";
+            tdVal.style.borderTop = "2px solid #06b6d4";
+
+            tr.appendChild(tdLabel);
+            tr.appendChild(tdVal);
+            tfoot.appendChild(tr);
+          });
+          tabla.appendChild(tfoot);
+
+          stats.appendChild(tabla);
+        } else if (prueba.test_name === "Prueba de Poker") {
+          // Crear tabla
+          const tabla = document.createElement("table");
+          tabla.style.width = "100%";
+          tabla.style.marginTop = "15px";
+          tabla.style.borderCollapse = "collapse";
+          tabla.style.fontFamily = "'Roboto Mono', monospace";
+          tabla.style.fontSize = "13px";
+          tabla.style.color = "#e2e8f0";
+
+          // Encabezados
+          const encabezados = ["Cat", "Oi", "Prob", "Ei", "(Oi-Ei)²/Ei"];
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          encabezados.forEach(h => {
+            const th = document.createElement("th");
+            th.textContent = h;
+            th.style.borderBottom = "2px solid #06b6d4";
+            th.style.padding = "6px";
+            th.style.textAlign = "center";
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          tabla.appendChild(thead);
+
+          // Filas con los datos
+          const tbody = document.createElement("tbody");
+          prueba.intervals_data.forEach(row => {
+            const tr = document.createElement("tr");
+
+            [
+              row.Cat,
+              row.Oi,
+              row.Prob.toFixed(4),
+              row.Ei.toFixed(2),
+              row["(Oi-Ei)^2/Ei"].toFixed(5)
+            ].forEach(val => {
+              const td = document.createElement("td");
+              td.textContent = val;
+              td.style.padding = "6px";
+              td.style.borderBottom = "1px solid #1e293b";
+              td.style.textAlign = "center";
+              tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+          });
+          tabla.appendChild(tbody);
+
+          card.appendChild(tabla);
+
+          // Estadísticas adicionales
           stats.innerHTML = `
-        <div class="stat-item"><strong>Número de intervalos:</strong> ${prueba.intervals}</div>
-        <div class="stat-item"><strong>Rango:</strong> [${prueba.range.minimum.toFixed(5)}, ${prueba.range.maximum.toFixed(5)}]</div>
-        <div class="stat-item"><strong>Amplitud por intervalo:</strong> ${prueba.range.amplitude.toFixed(5)}</div>
-        <div class="stat-item"><strong>Diferencia máxima (D):</strong> ${prueba.statistics.max_difference}</div>
-        <div class="stat-item"><strong>Valor crítico:</strong> ${prueba.statistics.critical_value}</div>
-        <div class="stat-item"><strong>Resultado:</strong> D < D_crítico → ${prueba.decision}</div>
-      `;
+    <div class="stat-item"><strong>Suma Oi:</strong> ${prueba.statistics.Suma_Oi}</div>
+    <div class="stat-item"><strong>χ² calculado:</strong> ${prueba.statistics.Chi2_calculado.toFixed(5)}</div>
+    <div class="stat-item"><strong>χ² crítico:</strong> ${prueba.statistics.critical_value.toFixed(5)}</div>
+    <div class="stat-item"><strong>Resultado:</strong> ${prueba.decision}</div>
+  `;
+        } else if (prueba.test_name === "Prueba de Varianza") {
+          stats.innerHTML = `
+          
+          <div class="stat-item"><strong>n:</strong> ${prueba.n}</div>  
+          <div class="stat-item"><strong>media_muestral:</strong> ${prueba.media_muestral.toFixed(5)}</div> 
+          <div class="stat-item"><strong>Varianza muestral (s²):</strong> ${prueba.varianza_muestral.toFixed(5)}</div>
+          <div class="stat-item"><strong>alpha/2:</strong> ${prueba.alphaDiv2}</div>
+          <div class="stat-item"><strong>Z:</strong> ${prueba.z}</div>
+          <div class="stat-item"><strong>Intervalo de confianza:</strong> [${prueba.Xi1.toFixed(5)}, ${prueba.Xi2.toFixed(5)}]</div>    
+          `
+
+        } else if (prueba.test_name === "Prueba Chi-Cuadrado") {
+          stats.innerHTML = ""; // limpiar contenido anterior
+
+          const tabla = document.createElement("table");
+          tabla.style.width = "100%";
+          tabla.style.borderCollapse = "collapse";
+          tabla.style.marginTop = "10px";
+          tabla.style.fontFamily = "'Roboto Mono', monospace";
+          tabla.style.fontSize = "13px";
+          tabla.style.color = "#e2e8f0";
+
+          // Encabezados
+          const encabezados = ["No", "Inicial", "Final", "Frec.Obt", "Frec.Esp", "Chi²"];
+          const thead = document.createElement("thead");
+          const trHead = document.createElement("tr");
+          encabezados.forEach(h => {
+            const th = document.createElement("th");
+            th.textContent = h;
+            th.style.borderBottom = "2px solid #06b6d4";
+            th.style.padding = "6px";
+            th.style.textAlign = "center";
+            trHead.appendChild(th);
+          });
+          thead.appendChild(trHead);
+          tabla.appendChild(thead);
+
+          // Filas con intervalos
+          const tbody = document.createElement("tbody");
+          prueba.intervals_data.forEach(row => {
+            const tr = document.createElement("tr");
+
+            [
+              row.no,
+              row.inicio.toFixed(5),
+              row.fin.toFixed(5),
+              row.frecuencia_obt,
+              row.frecuencia_esp.toFixed(2),
+              row.chi2.toFixed(5)
+            ].forEach(val => {
+              const td = document.createElement("td");
+              td.textContent = val;
+              td.style.padding = "6px";
+              td.style.borderBottom = "1px solid #1e293b";
+              td.style.textAlign = "center";
+              tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+          });
+          tabla.appendChild(tbody);
+
+          // Fila Totales
+          const trTotal = document.createElement("tr");
+
+          const tdLabel = document.createElement("td");
+          tdLabel.colSpan = 3;
+          tdLabel.textContent = "Total";
+          tdLabel.style.fontWeight = "bold";
+          tdLabel.style.textAlign = "center";
+          tdLabel.style.padding = "6px";
+          tdLabel.style.borderTop = "2px solid #06b6d4";
+
+          const tdFrecObt = document.createElement("td");
+          tdFrecObt.textContent = prueba.statistics.frecuencia_obt_total;
+          tdFrecObt.style.fontWeight = "bold";
+          tdFrecObt.style.textAlign = "center";
+          tdFrecObt.style.borderTop = "2px solid #06b6d4";
+
+          const tdFrecEsp = document.createElement("td");
+          tdFrecEsp.textContent = prueba.statistics.frecuencia_esp_total;
+          tdFrecEsp.style.fontWeight = "bold";
+          tdFrecEsp.style.textAlign = "center";
+          tdFrecEsp.style.borderTop = "2px solid #06b6d4";
+
+          const tdChi2 = document.createElement("td");
+          tdChi2.textContent = prueba.statistics.chi2_total.toFixed(3);
+          tdChi2.style.fontWeight = "bold";
+          tdChi2.style.textAlign = "center";
+          tdChi2.style.borderTop = "2px solid #06b6d4";
+
+          trTotal.appendChild(tdLabel);
+          trTotal.appendChild(tdFrecObt);
+          trTotal.appendChild(tdFrecEsp);
+          trTotal.appendChild(tdChi2);
+          tabla.appendChild(trTotal);
+
+          // Insertar tabla en el stats-info
+          stats.appendChild(tabla);
+
+          // Resumen debajo
+          const resumen = document.createElement("div");
+          resumen.style.marginTop = "10px";
+          resumen.style.fontSize = "14px";
+          resumen.innerHTML = `
+    <strong>χ² crítico:</strong> ${prueba.statistics.chi2_critico.toFixed(5)}<br>
+    <strong>Decisión:</strong> ${prueba.decision}
+  `;
+          stats.appendChild(resumen);
         }
+
+
 
         card.appendChild(stats);
 

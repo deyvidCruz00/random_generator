@@ -3,6 +3,7 @@ from modules.pruebas.prueba_de_varianza import prueba_de_varianza
 from modules.pruebas.prueba_chi2_2 import prueba_chi_cuadrado
 from modules.pruebas.ks import kolmogorov_smirnov_test
 from modules.pruebas.poker import poker_test_json
+from modules.pruebas.rachas import prueba_rachas
 ##from modules.pruebas.prueba_rachas import prueba_rachas
 
 PRUEBAS_DISPONIBLES = {
@@ -11,6 +12,7 @@ PRUEBAS_DISPONIBLES = {
     "chi": prueba_chi_cuadrado,
     "kolmogorov": kolmogorov_smirnov_test,
     "poker": poker_test_json,
+    "rachas": prueba_rachas
 }
 
 def ejecutar_pruebas(datos, pruebas, alpha):

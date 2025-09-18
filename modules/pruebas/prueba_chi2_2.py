@@ -1,10 +1,7 @@
 import numpy as np
 import scipy.stats as stats
 import json
-
-def truncar(num, decimales=5):
-    factor = 10.0 ** decimales
-    return int(num * factor) / factor
+from scipy.stats import chi2
 
 def prueba_chi_cuadrado(datos, k=8, alpha=0.05):
     """
@@ -33,7 +30,7 @@ def prueba_chi_cuadrado(datos, k=8, alpha=0.05):
     chi2_total = np.sum(chi2_vals)
     
     # Valor crítico
-    chi2_critico = stats.chi2.ppf(1 - alpha, df=k-1)
+    chi2_critico = chi2.ppf(1 - alpha, 7)
     
     # Construcción de la respuesta en formato JSON
     resultado = {
@@ -41,17 +38,18 @@ def prueba_chi_cuadrado(datos, k=8, alpha=0.05):
         "intervals": k,
         "n": n,
         "range": {
-            "minimum": truncar(minimo, 5),
-            "maximum": truncar(maximo, 5)
+            "minimum": minimo,
+            "maximum": maximo
         },
         "intervals_data": [],
         "statistics": {
             "frecuencia_obt_total": int(np.sum(frecuencias_obs)),
             "frecuencia_esp_total": int(freq_esp * k),
-            "chi2_total": truncar(chi2_total, 5),
-            "chi2_critico": truncar(chi2_critico, 5),
+            "chi2_total": chi2_total,
+            "chi2_critico": chi2_critico,
         },
-        "decision": "No se rechaza H0 (pasa la prueba)" if chi2_total < chi2_critico else "Se rechaza H0 (no pasa la prueba)"
+        "decision": "Pasa la prueba chi-cuadrado." if chi2_total <= chi2_critico else "No pasa la prueba chi-cuadrado.",
+        "isApproved": str(chi2_total <= chi2_critico)
     }
 
     for i in range(k):
