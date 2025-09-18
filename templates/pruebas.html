@@ -298,7 +298,7 @@
           Prueba de Chi-cuadrado
         </label>
         <div id="kChi" class="input-group" style="display:none; margin-left:20px; margin-top:10px;">
-          <input type="number" id="chiK" step="any" placeholder="Valor de K">
+          <input type="number" id="chiK" step="any" placeholder="K para chi-cuadrado">
         </div>
 
         <!-- Kolmogorov-Smirnov -->
@@ -310,7 +310,7 @@
           Prueba de Kolmogorov–Smirnov
         </label>
         <div id="kKolmogorov" class="input-group" style="display:none; margin-left:20px; margin-top:10px;">
-          <input type="number" id="kolmogorovK" step="any" placeholder="Valor de K">
+          <input type="number" id="kolmogorovK" step="any" placeholder="K para kolmogorov–smirnov">
         </div>
         <label class="checkbox-label">
           <label class="switch">
@@ -419,15 +419,33 @@
 
 
     async function generarPruebas() {
+      const chiChecked = document.getElementById("pruebaChi").checked;
+      const kolChecked = document.getElementById("pruebaKolmogorov").checked;
+
+      let chiK = null;
+      let kolK = null;
+
+      if (chiChecked) {
+        chiK = parseInt(document.getElementById("chiK").value, 10);
+        if (isNaN(chiK) || chiK < 2) {
+          alert("El valor de K para Chi-cuadrado debe ser un entero mayor o igual a 2.");
+          return;
+        }
+      }
+
+      if (kolChecked) {
+        kolK = parseInt(document.getElementById("kolmogorovK").value, 10);
+        if (isNaN(kolK) || kolK < 1) {
+          alert("El valor de K para Kolmogorov–Smirnov debe ser un entero mayor o igual a 1.");
+          return;
+        }
+      }
+
       const pruebasSeleccionadas = {
         medias: document.getElementById("pruebaMedias").checked,
         varianza: document.getElementById("pruebaVarianza").checked,
-        chi: document.getElementById("pruebaChi").checked ? {
-          k: parseFloat(document.getElementById("chiK").value) || null
-        } : false,
-        kolmogorov: document.getElementById("pruebaKolmogorov").checked ? {
-          k: parseFloat(document.getElementById("kolmogorovK").value) || null
-        } : false,
+        chi: chiChecked ? { k: chiK } : false,
+        kolmogorov: kolChecked ? { k: kolK } : false,
         poker: document.getElementById("pruebaPoker").checked,
         rachas: document.getElementById("pruebaRachas").checked
       };
@@ -460,25 +478,15 @@
 
         const resultado = await response.json();
         console.log("Resultados del backend:", resultado);
-        // Guardas los resultados en sessionStorage para la próxima página
         sessionStorage.setItem("resultadosPruebas", JSON.stringify(resultado));
-
-
       } catch (error) {
         console.error(error);
         alert("Ocurrió un error al ejecutar las pruebas.");
       }
 
-
-
-
-      // Guardas en sessionStorage
-      //sessionStorage.setItem("numerosGenerados", JSON.stringify(numeros));
-
-      // Redirigir a la página de resultados
       window.location.href = "/resultados";
-
     }
+
 
 
   </script>
