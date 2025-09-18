@@ -2,11 +2,6 @@ import json
 from collections import Counter
 import scipy.stats as stats
 
-def truncate(num, decimals=5):
-    """Trunca un número a 'decimals' decimales"""
-    factor = 10 ** decimals
-    return int(num * factor) / factor
-
 def poker_test_json(datos, alpha=0.05):
     """
     numbers: lista de números pseudoaleatorios
@@ -66,13 +61,13 @@ def poker_test_json(datos, alpha=0.05):
         
         # Cálculo de (Oi-Ei)^2 / Ei solo si Ei > 0
         chi2_component = ((oi - ei)**2) / ei if ei > 0 else 0
-        chi2_component = truncate(chi2_component)
+        chi2_component = chi2_component
         
         categories_data.append({
             "Cat": cat,
             "Oi": oi,
             "Prob": prob,
-            "Ei": truncate(ei),
+            "Ei": ei,
             "(Oi-Ei)^2/Ei": chi2_component
         })
         
@@ -87,10 +82,11 @@ def poker_test_json(datos, alpha=0.05):
         "intervals_data": categories_data,
         "statistics": {
             "Suma_Oi": suma_oi,
-            "Chi2_calculado": truncate(suma_chi2),
-            "critical_value": truncate(chi2_critical)
+            "Chi2_calculado": suma_chi2,
+            "critical_value": chi2_critical
         },      
-        "decision": "No se rechaza H0 (pasa la prueba)" if suma_chi2 <= chi2_critical else "Se rechaza H0 (no pasa la prueba)"
+        "decision": "Pasa la prueba de poker." if suma_chi2 <= chi2_critical else "No pasa la prueba de poker.",
+        "isApproved": str(suma_chi2 <= chi2_critical)
     }
 
     return json.dumps(result, indent=4, ensure_ascii=False)
