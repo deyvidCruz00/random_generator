@@ -246,10 +246,10 @@
 
 <body>
   <div class="container">
-    <h1>> Generador de Pruebas</h1>
+    <h1>Generador de Pruebas</h1>
 
     <div class="section">
-      <h2>// Ingresar Números</h2>
+      <h2>Ingresar Números</h2>
       <div class="input-group">
         <input type="number" id="numeroInput" step="any" placeholder="Escribe un número pseudoaleatorio">
         <button onclick="agregarNumero()">&#43; Agregar</button>
@@ -273,7 +273,7 @@
     </div>
 
     <div class="section">
-      <h2>// Seleccionar Pruebas</h2>
+      <h2>Seleccionar Pruebas</h2>
       <div class="checkbox-container">
         <label class="checkbox-label">
           <label class="switch">
@@ -330,7 +330,7 @@
     </div>
 
     <div class="section">
-      <h2>// Nivel de Significancia (α)</h2>
+      <h2>Nivel de Significancia (α)</h2>
       <input type="number" id="alphaInput" step="0.01" value="0.05" min="0.001" max="0.5">
     </div>
 
@@ -444,8 +444,6 @@
         pruebasSeleccionadas,
         alpha
       };
-
-      console.log("Datos a enviar al backend:", datos);
 
       try {
         const response = await fetch("/evaluar", {
