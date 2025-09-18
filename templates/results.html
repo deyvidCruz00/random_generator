@@ -49,6 +49,44 @@
       margin: auto;
     }
 
+    .resumen-pruebas {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 20px 0;
+      padding: 15px;
+      background: rgba(30, 41, 55, 0.6);
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+    }
+
+    .resumen-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 14px;
+      font-weight: bold;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #1e293b;
+    }
+
+    .resumen-item.success {
+      color: #10b981;
+      /* verde */
+      border-color: #10b981;
+    }
+
+    .resumen-item.fail {
+      color: #ef4444;
+      /* rojo */
+      border-color: #ef4444;
+    }
+
+
     .pruebas-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -138,7 +176,10 @@
 
 <body>
   <div class="container">
-    <h1>> Resultados de las Pruebas</h1>
+    <h1>Resultados de las Pruebas</h1>
+
+    <div id="resumenPruebas" class="resumen-pruebas"></div>
+
 
     <div class="pruebas-grid" id="pruebasResultados">
     </div>
@@ -164,6 +205,37 @@
     };
 
     console.log("Resultados de Pruebas:", resultados);
+
+    function renderResumenPruebas(resultados) {
+      const contenedor = document.getElementById("resumenPruebas");
+      contenedor.innerHTML = "";
+
+      const orden = [
+        "Prueba de Medias",
+        "Prueba de Varianza",
+        "Prueba Chi-Cuadrado",
+        "Prueba KS",
+        "Prueba de Poker",
+        "Prueba de Rachas"
+      ];
+
+      orden.forEach(nombre => {
+        const prueba = Object.values(resultados)
+          .map(r => JSON.parse(r))
+          .find(p => p.test_name === nombre);
+
+        if (prueba) {
+          const aprobado = prueba.isApproved === "True";
+          const div = document.createElement("div");
+          div.className = `resumen-item ${aprobado ? "success" : "fail"}`;
+          div.innerHTML = aprobado
+            ? `✅ ${nombre}`
+            : `❌ ${nombre}`;
+          contenedor.appendChild(div);
+        }
+      });
+    }
+
 
     // Función para generar datos de distribución normal
     function generarDistribucionNormal(media, desviacion, puntos = 100) {
@@ -699,6 +771,133 @@
       };
     }
 
+    // Configuración para la Prueba de Rachas con muestreo automático
+    function obtenerConfiguracionRachas(prueba) {
+      const n = prueba.Total;                 // número total de observaciones
+      const esperadas = prueba.UR;
+      const varianza = prueba.Varianza;
+      const desv = Math.sqrt(varianza);
+
+      // 🔹 Límite máximo de puntos a graficar
+      const maxPoints = 2000;
+      const step = Math.max(1, Math.ceil(n / maxPoints));
+
+      // Función auxiliar para reducir datos
+      function reducirDatos(generator) {
+        const datos = [];
+        for (let i = 1; i <= n; i += step) {
+          datos.push(generator(i));
+        }
+        // asegurar que el último punto siempre aparezca
+        if (datos[datos.length - 1].x !== n) {
+          datos.push(generator(n));
+        }
+        return datos;
+      }
+
+      // Construcción de datasets
+      const datosObservados = reducirDatos(i => ({
+        x: i,
+        y: (prueba.Rachas / n) * i
+      }));
+
+      const datosEsperados = reducirDatos(i => ({
+        x: i,
+        y: (esperadas / n) * i
+      }));
+
+      const datosSup = reducirDatos(i => {
+        const media = (esperadas / n) * i;
+        const margen = 1.96 * (desv / Math.sqrt(n)) * (i / n);
+        return { x: i, y: media + margen };
+      });
+
+      const datosInf = reducirDatos(i => {
+        const media = (esperadas / n) * i;
+        const margen = 1.96 * (desv / Math.sqrt(n)) * (i / n);
+        return { x: i, y: media - margen };
+      });
+
+      return {
+        type: 'line',
+        data: {
+          datasets: [
+            {
+              label: 'Rachas acumuladas (observadas)',
+              data: datosObservados,
+              borderColor: 'rgba(6, 182, 212, 0.9)',   // azul/cian con un poco de transparencia
+              backgroundColor: 'rgba(6, 182, 212, 0.5)', // relleno de puntos (si hay pocos datos)
+              borderWidth: 3,                           // más gruesa para destacarse
+              borderDash: [4, 2],                       // 🔹 punteada para diferenciar
+              fill: false,
+              tension: 0,
+              pointRadius: n <= 200 ? 3 : 0,            // solo puntos si la muestra es pequeña
+              order: 2                                  // siempre encima de la esperada
+            },
+            {
+              label: 'Rachas esperadas',
+              data: datosEsperados,
+              borderColor: '#ef4444',
+              borderDash: [6, 4],
+              fill: false,
+              borderWidth: 2,
+              tension: 0,
+              pointRadius: 0
+            },
+            {
+              label: 'Intervalo de confianza 95%',
+              data: [...datosSup, ...datosInf.reverse()],
+              backgroundColor: 'rgba(148, 163, 184, 0.4)',
+              borderColor: 'transparent',
+              fill: true,
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: temaHibrido.textColor,
+                usePointStyle: true
+              }
+            },
+            title: {
+              display: true,
+              text: `Evolución de las Rachas (n=${n})`,
+              color: temaHibrido.textColor,
+              font: { size: 16, weight: 'bold' }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              title: {
+                display: true,
+                text: 'Número de observaciones',
+                color: temaHibrido.textColor
+              },
+              grid: { color: temaHibrido.gridColor },
+              ticks: { color: temaHibrido.textColor }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Rachas acumuladas',
+                color: temaHibrido.textColor
+              },
+              grid: { color: temaHibrido.gridColor },
+              ticks: { color: temaHibrido.textColor }
+            }
+          }
+        }
+      };
+    }
+
+
+
     // Función principal para obtener configuración según el tipo de prueba
     function obtenerConfiguracionGrafico(prueba) {
       switch (prueba.test_name) {
@@ -710,6 +909,8 @@
           return obtenerConfiguracionVarianza(prueba);
         case "Prueba Chi-Cuadrado":
           return obtenerConfiguracionChiCuadrado(prueba);
+        case "Prueba de Rachas":
+          return obtenerConfiguracionRachas(prueba);
         default:
           return null;
       }
@@ -717,6 +918,9 @@
 
 
     function renderResultados() {
+
+      renderResumenPruebas(resultados);
+
       const contenedor = document.getElementById("pruebasResultados");
       contenedor.innerHTML = '';
       charts = [];
@@ -727,7 +931,7 @@
         card.className = "prueba-card";
 
         const title = document.createElement("h2");
-        title.textContent = `// ${prueba.test_name}`;
+        title.textContent = `${prueba.test_name}`;
         card.appendChild(title);
 
         const resumen = document.createElement("p");
@@ -1019,6 +1223,21 @@
     <strong>Decisión:</strong> ${prueba.decision}
   `;
           stats.appendChild(resumen);
+        } else if (prueba.test_name === "Prueba de Rachas") {
+          stats.innerHTML = `
+    <div class="stat-item"><strong>Mediana muestral:</strong> ${prueba.Mediana_muestral}</div>
+    <div class="stat-item"><strong>Mediana teórica:</strong> ${prueba.Mediana_teorica}</div>
+    
+    <div class="stat-item"><strong>Rachas observadas:</strong> ${prueba.Rachas}</div>
+    <div class="stat-item"><strong>Total "+" :</strong> ${prueba.Total_may}</div>
+    <div class="stat-item"><strong>Total "-" :</strong> ${prueba.Total_min}</div>
+    <div class="stat-item"><strong>Total:</strong> ${prueba.Total}</div>
+    
+    <div class="stat-item"><strong>UR (esperado):</strong> ${prueba.UR.toFixed(5)}</div>
+    <div class="stat-item"><strong>Varianza:</strong> ${prueba.Varianza.toFixed(5)}</div>
+    <div class="stat-item"><strong>Z:</strong> ${prueba.Z.toFixed(5)}</div>
+    <div class="stat-item"><strong>Rango crítico (95%):</strong> [${prueba.Rango_min.toFixed(5)}, ${prueba.Rango_max.toFixed(5)}]</div>
+  `;
         }
 
 

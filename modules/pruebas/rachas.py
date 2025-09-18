@@ -56,7 +56,7 @@ def prueba_rachas(muestra, alpha=0.05, mediana_teorica=0.5):
         "Total_min": n_neg,
         "Total": n,
         "Rachas": rachas,
-        "UR (esperado)": ur,
+        "UR": ur,
         "Varianza": varianza,
         "Z": z,
         "Rango_min": rango_min,
