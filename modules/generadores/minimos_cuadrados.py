@@ -29,7 +29,15 @@ def generar(seed, amount, a=0, b=10):
 def extraer_numero(valor_c, valor_d):
     c_str = str(valor_c)
 
-    if valor_d == 8:
+    if valor_d == 12:
+        inicio, longitud = 4, 4
+    elif valor_d == 11:
+        inicio, longitud = 3, 4
+    elif valor_d == 10:
+        inicio, longitud = 3, 4
+    elif valor_d == 9:
+        inicio, longitud = 2, 4
+    elif valor_d == 8:
         inicio, longitud = 2, 4
     elif valor_d == 7:
         inicio, longitud = 1, 4
@@ -44,6 +52,13 @@ def extraer_numero(valor_c, valor_d):
     else:
         return None  
 
+    # Verificar que la extracción no se salga de los límites
+    if inicio + longitud > len(c_str):
+        # Ajustar la longitud si es necesario
+        longitud = len(c_str) - inicio
+        if longitud <= 0:
+            return None
+    
     extraido = c_str[inicio:inicio + longitud]
     return int(extraido)
 
@@ -72,6 +87,57 @@ def truncar_decimales_inteligente(numero):
     
     # Convertir de vuelta a float
     return float(resultado_str)
+
+def graficar_serie_temporal(ri_values, metodo="Cuadrados Medios", titulo_adicional=""):
+    """
+    Genera un gráfico de serie temporal de los valores Ri generados.
+    
+    Args:
+        ri_values: Lista de valores Ri
+        metodo: Nombre del método generador
+        titulo_adicional: Información adicional para el título
+    
+    Returns:
+        String con el gráfico codificado en base64
+    """
+    import matplotlib.pyplot as plt
+    import io
+    import base64
+    
+    # Configurar el gráfico
+    plt.figure(figsize=(12, 6))
+    
+    # Crear índices (1, 2, 3, ...)
+    indices = list(range(1, len(ri_values) + 1))
+    
+    # Gráfico de líneas con puntos
+    plt.plot(indices, ri_values, 'b-o', linewidth=1.5, markersize=3, alpha=0.7)
+    
+    # Personalización
+    plt.title(f'Serie Temporal - {metodo}\n{titulo_adicional}', fontsize=14, fontweight='bold')
+    plt.xlabel('Índice (i)', fontsize=12)
+    plt.ylabel('Valores Ri', fontsize=12)
+    plt.grid(True, alpha=0.3)
+    
+    # Ajustar límites del eje Y
+    plt.ylim(0, 1)
+    
+    # Estadísticas básicas en el gráfico
+    mean_val = sum(ri_values) / len(ri_values)
+    plt.axhline(y=mean_val, color='red', linestyle='--', alpha=0.7, label=f'Media: {mean_val:.4f}')
+    plt.axhline(y=0.5, color='green', linestyle='--', alpha=0.5, label='Valor esperado: 0.5')
+    
+    plt.legend()
+    plt.tight_layout()
+    
+    # Convertir a base64
+    img = io.BytesIO()
+    plt.savefig(img, format='png', dpi=150, bbox_inches='tight')
+    img.seek(0)
+    plot_url = base64.b64encode(img.getvalue()).decode()
+    plt.close()
+    
+    return plot_url
 
 # # Ejemplo de uso
 # df = generar(2222, 50, a=5, b=15)  # puedes cambiar a y b
