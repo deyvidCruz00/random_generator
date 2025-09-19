@@ -31,6 +31,10 @@ semilla_seleccionada_multiplicativo = None
 # Variable global para rastrear el último método de generación usado
 ultimo_metodo_generacion = None
 
+# Variable global para cachear resultados de pruebas estadísticas
+ultimos_resultados_pruebas_raw = None
+ultimos_resultados_pruebas_procesados = None
+
 app = Flask(__name__)
 
 @app.route("/pruebas")
@@ -79,6 +83,14 @@ def cuadrados():
         n = request.form["iteraciones"]
         n_int = int(float(n))
         df = generar_mc(int(semilla), n_int)
+        
+        # Verificar si el DataFrame tiene datos y la columna Ri existe
+        if df.empty or 'Ri' not in df.columns:
+            return render_template("cuadrados.html", 
+                                 error=f"Error: No se pudieron generar números con la semilla {semilla}. La secuencia se degeneró. Intenta con una semilla diferente.",
+                                 xo=semilla, 
+                                 n=n)
+        
         # Mapear los valores Ri a variable global
         global ri_cuadrados, ultimo_metodo_generacion
         ri_cuadrados = df['Ri'].tolist()
@@ -125,8 +137,13 @@ def cuadrados():
         
         # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
         if ri_cuadrados:
+            global ultimos_resultados_pruebas_raw, ultimos_resultados_pruebas_procesados
             resultados_pruebas_raw = ejecutar_pruebas_internas(ri_cuadrados)
             resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+            
+            # Guardar en cache para uso posterior en distribuciones
+            ultimos_resultados_pruebas_raw = resultados_pruebas_raw
+            ultimos_resultados_pruebas_procesados = resultados_pruebas
 
     return render_template("cuadrados.html", 
                            table=data, 
@@ -211,8 +228,13 @@ def lineal():
         
         # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
         if ri_lineal:
+            global ultimos_resultados_pruebas_raw, ultimos_resultados_pruebas_procesados
             resultados_pruebas_raw = ejecutar_pruebas_internas(ri_lineal)
             resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+            
+            # Guardar en cache para uso posterior en distribuciones
+            ultimos_resultados_pruebas_raw = resultados_pruebas_raw
+            ultimos_resultados_pruebas_procesados = resultados_pruebas
 
     return render_template("lineal.html", 
                            table=data, 
@@ -297,8 +319,13 @@ def multiplicativo():
         
         # Si hay datos, ejecutar pruebas automáticamente para mantener consistencia
         if ri_multiplicativo:
+            global ultimos_resultados_pruebas_raw, ultimos_resultados_pruebas_procesados
             resultados_pruebas_raw = ejecutar_pruebas_internas(ri_multiplicativo)
             resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+            
+            # Guardar en cache para uso posterior en distribuciones
+            ultimos_resultados_pruebas_raw = resultados_pruebas_raw
+            ultimos_resultados_pruebas_procesados = resultados_pruebas
 
     return render_template("multiplicativo.html",
                            table=data,
@@ -555,11 +582,19 @@ def distribucion_normal():
         media = float(request.form.get("media", 0.0))
         desviacion = float(request.form.get("desviacion", 1.0))
         
-        # Ejecutar pruebas estadísticas primero
-        resultados_pruebas_raw = ejecutar_pruebas_internas(ri_disponibles)
+        # 🚀 OPTIMIZACIÓN: Reutilizar resultados de pruebas si están disponibles
+        global ultimos_resultados_pruebas_raw, ultimos_resultados_pruebas_procesados
         
-        # Procesar resultados para el template
-        resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+        if ultimos_resultados_pruebas_raw is not None and ultimos_resultados_pruebas_procesados is not None:
+            # Usar resultados cacheados (sin volver a ejecutar pruebas)
+            resultados_pruebas_raw = ultimos_resultados_pruebas_raw
+            resultados_pruebas = ultimos_resultados_pruebas_procesados
+            print("✅ Reutilizando resultados de pruebas cacheados en distribución normal")
+        else:
+            # Fallback: ejecutar pruebas si no hay cache disponible
+            resultados_pruebas_raw = ejecutar_pruebas_internas(ri_disponibles)
+            resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+            print("⚠️ Ejecutando pruebas desde cero en distribución normal (no hay cache)")
         
         # Verificar si alguna prueba pasó
         if "error" not in resultados_pruebas_raw:
@@ -569,8 +604,11 @@ def distribucion_normal():
                 try:
                     # Parsear el JSON string para obtener el diccionario
                     resultado_dict = json.loads(resultado_json)
+                    print("calculado prueba")
+
                     # Verificar si la prueba fue aprobada
                     if resultado_dict.get("isApproved") == "True":
+                        print("pruebas pasaron")
                         pruebas_pasaron = True
                         break
                 except (json.JSONDecodeError, AttributeError):
@@ -580,7 +618,45 @@ def distribucion_normal():
             if pruebas_pasaron:
                 # Al menos una prueba pasó, proceder con el cálculo
                 df_normal = distribucion_normal_inversa(ri_disponibles, desviacion, media)
-                table = df_normal.to_html(classes="table table-bordered table-striped text-center", index=False)
+                print("distribucion calculada")
+                
+                # ⚡ OPTIMIZACIÓN: Para conjuntos grandes, mostrar solo una muestra
+                tabla_mensaje = ""
+                n_total = len(df_normal)
+                if n_total > 10000:
+                    # Mostrar solo los primeros 500, algunos del medio y los últimos 500
+                    df_muestra = df_normal.head(500).copy()
+                    
+                    # Agregar algunos del medio
+                    if n_total > 2000:
+                        medio_inicio = n_total // 2 - 250
+                        medio_fin = n_total // 2 + 250
+                        df_medio = df_normal.iloc[medio_inicio:medio_fin].copy()
+                        df_muestra = pd.concat([df_muestra, df_medio])
+                    
+                    # Agregar los últimos
+                    df_final = df_normal.tail(500).copy()
+                    df_muestra = pd.concat([df_muestra, df_final])
+                    
+                    # Remover duplicados y ordenar por índice
+                    df_muestra = df_muestra.drop_duplicates().sort_index()
+                    
+                    table = df_muestra.to_html(classes="table table-bordered table-striped text-center", index=False)
+                    tabla_mensaje = f'''
+                    <div class="alert alert-info mb-3">
+                        <h5><i class="fas fa-info-circle"></i> Conjunto grande detectado</h5>
+                        <p><strong>Total de valores transformados:</strong> {n_total:,} números</p>
+                        <p><strong>Mostrando:</strong> {len(df_muestra):,} valores de muestra (primeros 500 + algunos del medio + últimos 500)</p>
+                        <p><small>La distribución completa se basó en todos los {n_total:,} valores.</small></p>
+                    </div>
+                    '''
+                else:
+                    # Para conjuntos pequeños, mostrar todo
+                    table = df_normal.to_html(classes="table table-bordered table-striped text-center", index=False)
+                
+                # Agregar el mensaje antes de la tabla
+                if tabla_mensaje:
+                    table = tabla_mensaje + table
                 
                 # Generar gráfico
                 grafico = graficar_distribucion_normal(ri_disponibles, desviacion, media)
@@ -623,11 +699,19 @@ def distribucion_uniforme_endpoint():
         min_val = float(request.form.get("min_val", 0.0))
         max_val = float(request.form.get("max_val", 1.0))
         
-        # Ejecutar pruebas estadísticas primero
-        resultados_pruebas_raw = ejecutar_pruebas_internas(ri_disponibles)
+        # 🚀 OPTIMIZACIÓN: Reutilizar resultados de pruebas si están disponibles
+        global ultimos_resultados_pruebas_raw, ultimos_resultados_pruebas_procesados
         
-        # Procesar resultados para el template
-        resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+        if ultimos_resultados_pruebas_raw is not None and ultimos_resultados_pruebas_procesados is not None:
+            # Usar resultados cacheados (sin volver a ejecutar pruebas)
+            resultados_pruebas_raw = ultimos_resultados_pruebas_raw
+            resultados_pruebas = ultimos_resultados_pruebas_procesados
+            print("✅ Reutilizando resultados de pruebas cacheados en distribución uniforme")
+        else:
+            # Fallback: ejecutar pruebas si no hay cache disponible
+            resultados_pruebas_raw = ejecutar_pruebas_internas(ri_disponibles)
+            resultados_pruebas = procesar_resultados_para_template(resultados_pruebas_raw)
+            print("⚠️ Ejecutando pruebas desde cero en distribución uniforme (no hay cache)")
         
         # Verificar si alguna prueba pasó
         if "error" not in resultados_pruebas_raw:
@@ -648,7 +732,44 @@ def distribucion_uniforme_endpoint():
             if pruebas_pasaron:
                 # Al menos una prueba pasó, proceder con el cálculo
                 df_uniforme, ni_values = distribucion_uniforme(ri_disponibles, min_val, max_val)
-                table = df_uniforme.to_html(classes="table table-bordered table-striped text-center", index=False)
+                
+                # ⚡ OPTIMIZACIÓN: Para conjuntos grandes, mostrar solo una muestra
+                tabla_mensaje = ""
+                n_total = len(df_uniforme)
+                if n_total > 10000:
+                    # Mostrar solo los primeros 500, algunos del medio y los últimos 500
+                    df_muestra = df_uniforme.head(500).copy()
+                    
+                    # Agregar algunos del medio
+                    if n_total > 2000:
+                        medio_inicio = n_total // 2 - 250
+                        medio_fin = n_total // 2 + 250
+                        df_medio = df_uniforme.iloc[medio_inicio:medio_fin].copy()
+                        df_muestra = pd.concat([df_muestra, df_medio])
+                    
+                    # Agregar los últimos
+                    df_final = df_uniforme.tail(500).copy()
+                    df_muestra = pd.concat([df_muestra, df_final])
+                    
+                    # Remover duplicados y ordenar por índice
+                    df_muestra = df_muestra.drop_duplicates().sort_index()
+                    
+                    table = df_muestra.to_html(classes="table table-bordered table-striped text-center", index=False)
+                    tabla_mensaje = f'''
+                    <div class="alert alert-info mb-3">
+                        <h5><i class="fas fa-info-circle"></i> Conjunto grande detectado</h5>
+                        <p><strong>Total de valores transformados:</strong> {n_total:,} números</p>
+                        <p><strong>Mostrando:</strong> {len(df_muestra):,} valores de muestra (primeros 500 + algunos del medio + últimos 500)</p>
+                        <p><small>La distribución completa se basó en todos los {n_total:,} valores.</small></p>
+                    </div>
+                    '''
+                else:
+                    # Para conjuntos pequeños, mostrar todo
+                    table = df_uniforme.to_html(classes="table table-bordered table-striped text-center", index=False)
+                
+                # Agregar el mensaje antes de la tabla
+                if tabla_mensaje:
+                    table = tabla_mensaje + table
                 
                 # Generar gráfico
                 grafico = graficar_distribucion_uniforme(ri_disponibles, ni_values, min_val, max_val)
@@ -849,6 +970,240 @@ def pruebas_multiplicativo():
     return render_template("multiplicativo.html", 
                          xo=xo, t=t, g=g, n=n,
                          resultados_pruebas=resultados_pruebas)
+
+
+@app.route("/exportar_normal_csv", methods=["POST"])
+def exportar_normal_csv():
+    """Exportar datos de distribución normal a CSV"""
+    try:
+        # Obtener datos disponibles
+        ri_disponibles = obtener_ri()
+        if not ri_disponibles:
+            return jsonify({"error": "No hay datos disponibles para exportar"}), 400
+        
+        # Obtener parámetros del formulario
+        media = float(request.form.get("media", 0.0))
+        desviacion = float(request.form.get("desviacion", 1.0))
+        
+        # Generar distribución normal
+        df_normal = distribucion_normal_inversa(ri_disponibles, desviacion, media)
+        
+        # Crear archivo CSV en memoria
+        output = io.StringIO()
+        df_normal.to_csv(output, index=False, encoding='utf-8')
+        output.seek(0)
+        
+        # Crear un objeto de bytes
+        mem = io.BytesIO()
+        mem.write(output.getvalue().encode('utf-8'))
+        mem.seek(0)
+        
+        # Generar nombre de archivo con parámetros
+        filename = f"distribucion_normal_media_{media}_desv_{desviacion}.csv"
+        
+        return send_file(
+            mem,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=filename
+        )
+    
+    except Exception as e:
+        return jsonify({"error": f"Error al exportar: {str(e)}"}), 500
+
+
+@app.route("/exportar_uniforme_csv", methods=["POST"])
+def exportar_uniforme_csv():
+    """Exportar datos de distribución uniforme a CSV"""
+    try:
+        # Obtener datos disponibles
+        ri_disponibles = obtener_ri()
+        if not ri_disponibles:
+            return jsonify({"error": "No hay datos disponibles para exportar"}), 400
+        
+        # Obtener parámetros del formulario
+        min_val = float(request.form.get("min_val", 0.0))
+        max_val = float(request.form.get("max_val", 1.0))
+        
+        # Generar distribución uniforme
+        df_uniforme, ni_values = distribucion_uniforme(ri_disponibles, min_val, max_val)
+        
+        # Crear archivo CSV en memoria
+        output = io.StringIO()
+        df_uniforme.to_csv(output, index=False, encoding='utf-8')
+        output.seek(0)
+        
+        # Crear un objeto de bytes
+        mem = io.BytesIO()
+        mem.write(output.getvalue().encode('utf-8'))
+        mem.seek(0)
+        
+        # Generar nombre de archivo con parámetros
+        filename = f"distribucion_uniforme_min_{min_val}_max_{max_val}.csv"
+        
+        return send_file(
+            mem,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=filename
+        )
+    
+    except Exception as e:
+        return jsonify({"error": f"Error al exportar: {str(e)}"}), 500
+
+
+@app.route("/grafico_uniforme", methods=["POST"])
+def grafico_uniforme():
+    """Generar solo el gráfico de distribución uniforme"""
+    try:
+        # Obtener datos disponibles
+        ri_disponibles = obtener_ri()
+        if not ri_disponibles:
+            mensaje_error = "No hay datos de números aleatorios disponibles. Genera números primero usando algún método."
+            return render_template("distribucion_uniforme.html", 
+                                 error=mensaje_error,
+                                 min_val=0.0,
+                                 max_val=1.0,
+                                 metodo_usado=ultimo_metodo_generacion)
+        
+        # Obtener parámetros del formulario
+        min_val = float(request.form.get("min_val", 0.0))
+        max_val = float(request.form.get("max_val", 1.0))
+        
+        # Generar distribución uniforme
+        df_uniforme, ni_values = distribucion_uniforme(ri_disponibles, min_val, max_val)
+        
+        # Generar solo el gráfico
+        grafico = graficar_distribucion_uniforme(ri_disponibles, ni_values, min_val, max_val)
+        
+        return render_template("distribucion_uniforme.html", 
+                             grafico=grafico,
+                             table=None,  # Solo mostrar gráfico
+                             min_val=min_val,
+                             max_val=max_val,
+                             metodo_usado=ultimo_metodo_generacion)
+    
+    except Exception as e:
+        return render_template("distribucion_uniforme.html", 
+                             error=f"Error al generar gráfico: {str(e)}",
+                             min_val=request.form.get("min_val", 0.0),
+                             max_val=request.form.get("max_val", 1.0),
+                             metodo_usado=ultimo_metodo_generacion)
+
+
+@app.route("/grafico_serie_cuadrados", methods=["POST"])
+def grafico_serie_cuadrados():
+    """Generar gráfico de serie temporal para cuadrados medios"""
+    try:
+        from modules.generadores.minimos_cuadrados import graficar_serie_temporal
+        
+        # Verificar que hay datos disponibles
+        if not ri_cuadrados:
+            return render_template("grafico_serie.html", 
+                                 error="No hay datos de cuadrados medios disponibles. Genera números primero.",
+                                 metodo="Cuadrados Medios",
+                                 volver_url="/cuadrados")
+        
+        # Obtener parámetros del formulario si están disponibles
+        semilla = request.form.get("semilla", "N/A")
+        iteraciones = len(ri_cuadrados)
+        
+        titulo_adicional = f"Semilla: {semilla} | Números generados: {iteraciones}"
+        
+        # Generar gráfico
+        grafico = graficar_serie_temporal(ri_cuadrados, "Cuadrados Medios", titulo_adicional)
+        
+        return render_template("grafico_serie.html", 
+                             grafico=grafico,
+                             metodo="Cuadrados Medios",
+                             titulo_adicional=titulo_adicional,
+                             volver_url="/cuadrados",
+                             total_numeros=iteraciones)
+    
+    except Exception as e:
+        return render_template("grafico_serie.html", 
+                             error=f"Error al generar gráfico: {str(e)}",
+                             metodo="Cuadrados Medios",
+                             volver_url="/cuadrados")
+
+
+@app.route("/grafico_serie_lineal", methods=["POST"])
+def grafico_serie_lineal():
+    """Generar gráfico de serie temporal para congruencia lineal"""
+    try:
+        from modules.generadores.congruencia_lineal import graficar_serie_temporal
+        
+        # Verificar que hay datos disponibles
+        if not ri_lineal:
+            return render_template("grafico_serie.html", 
+                                 error="No hay datos de congruencia lineal disponibles. Genera números primero.",
+                                 metodo="Congruencia Lineal",
+                                 volver_url="/lineal")
+        
+        # Obtener parámetros del formulario
+        xo = request.form.get("xo", "N/A")
+        k = request.form.get("k", "N/A")
+        c = request.form.get("c", "N/A")
+        g = request.form.get("g", "N/A")
+        iteraciones = len(ri_lineal)
+        
+        parametros_info = f"x₀={xo}, k={k}, c={c}, g={g}"
+        titulo_adicional = f"Números generados: {iteraciones}"
+        
+        # Generar gráfico
+        grafico = graficar_serie_temporal(ri_lineal, parametros_info, titulo_adicional)
+        
+        return render_template("grafico_serie.html", 
+                             grafico=grafico,
+                             metodo="Congruencia Lineal",
+                             titulo_adicional=f"{parametros_info} | {titulo_adicional}",
+                             volver_url="/lineal",
+                             total_numeros=iteraciones)
+    
+    except Exception as e:
+        return render_template("grafico_serie.html", 
+                             error=f"Error al generar gráfico: {str(e)}",
+                             metodo="Congruencia Lineal",
+                             volver_url="/lineal")
+
+
+@app.route("/grafico_serie_multiplicativo", methods=["POST"])
+def grafico_serie_multiplicativo():
+    """Generar gráfico de serie temporal para congruencia multiplicativa"""
+    try:
+        from modules.generadores.congruencia_multi import graficar_serie_temporal
+        
+        # Verificar que hay datos disponibles
+        if not ri_multiplicativo:
+            return render_template("grafico_serie.html", 
+                                 error="No hay datos de congruencia multiplicativa disponibles. Genera números primero.",
+                                 metodo="Congruencia Multiplicativa",
+                                 volver_url="/multiplicativo")
+        
+        # Obtener parámetros del formulario
+        xo = request.form.get("xo", "N/A")
+        t = request.form.get("t", "N/A")
+        g = request.form.get("g", "N/A")
+        iteraciones = len(ri_multiplicativo)
+        
+        parametros_info = f"x₀={xo}, t={t}, g={g}"
+        titulo_adicional = f"Números generados: {iteraciones}"
+        
+        # Generar gráfico
+        grafico = graficar_serie_temporal(ri_multiplicativo, parametros_info, titulo_adicional)
+        
+        return render_template("grafico_serie.html", 
+                             grafico=grafico,
+                             metodo="Congruencia Multiplicativa",
+                             titulo_adicional=f"{parametros_info} | {titulo_adicional}",
+                             volver_url="/multiplicativo",
+                             total_numeros=iteraciones)
+    
+    except Exception as e:
+        return render_template("grafico_serie.html", 
+                             error=f"Error al generar gráfico: {str(e)}",
+                             metodo="Congruencia Multiplicativa",
+                             volver_url="/multiplicativo")
 
 
 if __name__ == "__main__":

@@ -28,9 +28,9 @@
         <label>Valor máximo (b):</label>
         <input type="number" step="any" name="max_val" class="form-control" required value="{{ max_val }}">
       </div>
-      <button type="submit" name="accion" value="calcular" class="btn btn-primary">Calcular</button>
-      <button formaction="/exportar_uniforme_csv" formmethod="POST" class="btn btn-success">Exportar CSV</button>
-      <button formaction="/grafico_uniforme" formmethod="POST" class="btn btn-info">Ver Gráfico</button>
+      <button type="submit" name="accion" value="calcular" class="btn btn-primary me-2"> Calcular</button>
+      <button formaction="/exportar_uniforme_csv" formmethod="POST" class="btn btn-success me-2"> Exportar CSV</button>
+      <button formaction="/grafico_uniforme" formmethod="POST" class="btn btn-info"> Ver Gráfico</button>
     </form>
   </div>
 
@@ -40,7 +40,6 @@
       <h5 class="card-title">Parámetros actuales</h5>
       <p><strong>Valor mínimo (a):</strong> <span id="preview_min_val">{{ min_val }}</span></p>
       <p><strong>Valor máximo (b):</strong> <span id="preview_max_val">{{ max_val }}</span></p>
-      <p><strong>Intervalo:</strong> [<span id="preview_min_val2">{{ min_val }}</span>, <span id="preview_max_val2">{{ max_val }}</span>]</p>
     </div>
   </div>
 </div>
