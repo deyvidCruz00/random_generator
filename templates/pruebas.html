@@ -464,6 +464,21 @@
       };
 
       try {
+        const response = await fetch("/set", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(numeros)
+        });
+
+
+      } catch (error) {
+         console.error(error);
+        alert("Ocurrió un error al settear");
+      }
+
+      try {
         const response = await fetch("/evaluar", {
           method: "POST",
           headers: {
