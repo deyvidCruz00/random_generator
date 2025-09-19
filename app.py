@@ -363,7 +363,7 @@ def exportar_csv_congruencial_lineal():
     n = request.form["iteraciones"]
 
         # Aquí llamamos al generador de congruencia lineal
-    df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)), 0,0)
+    df = generar_cl(int(xo), int(k), int(c), int(g), int(float(n)))
 
     buffer = io.StringIO()
     df.to_csv(buffer, index=False)
@@ -381,7 +381,7 @@ def exportar_csv_congruencial_multiplicativa():
     g = request.form["g"]
     n = request.form["iteraciones"]
 
-    df = generar_cm(int(xo), int(t), int(g), int(float(n)), 0,0)
+    df = generar_cm(int(xo), int(t), int(g), int(float(n)))
     buffer = io.StringIO()
     df.to_csv(buffer, index=False)
     buffer.seek(0)
