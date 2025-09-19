@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, Response, request, jsonify, render_template, send_file
 from modules.pruebas.dispatcher import ejecutar_pruebas
 from modules.generadores.minimos_cuadrados import generar as generar_mc
 from modules.generadores.congruencia_lineal import generar as generar_cl
@@ -15,6 +15,8 @@ import base64
 import io
 
 app = Flask(__name__)
+
+nums = []
 
 @app.route("/pruebas")
 def pruebas():
@@ -34,6 +36,17 @@ def api_pruebas():
 def resultados():
     return render_template("results.html")
 
+
+@app.route("/set", methods=["POST"])
+def set_nums(): 
+        data = request.get_json()
+        global nums
+        nums = data
+        return Response(status=204)
+
+@app.route("/all", methods=["GET"])
+def get_nums(): 
+    return nums
 
 # Página principal
 @app.route("/")
