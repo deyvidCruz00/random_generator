@@ -12,16 +12,28 @@ def generar(x0: int, t: int, g: int, n: int):
 
     for i in range(n):
         xi = (a * xi) % m
-        ri = truncar(xi / (m - 1),5)   # Normalización
+        ri = truncar_decimales_inteligente(xi / (m - 1))   # Normalización
         data.append([i + 1, xi, ri])
 
     # Convertir en DataFrame
     df = pd.DataFrame(data, columns=["i", "Xi", "Ri"])
     return df
 
-def truncar(n, decimales=0):
-    factor = 10.0 ** decimales
-    return int(n * factor) / factor
+def truncar_decimales_inteligente(numero):
+    
+    # Truncar a 5 decimales máximo usando truncamiento, no redondeo
+    factor = 10.0 ** 5
+    truncado = int(numero * factor) / factor
+    
+    # Convertir a string para eliminar ceros trailing
+    resultado_str = f"{truncado:.5f}".rstrip('0').rstrip('.')
+    
+    # Si queda vacío después del punto, agregar un 0
+    if resultado_str.endswith('.'):
+        resultado_str = resultado_str[:-1]
+    
+    # Convertir de vuelta a float
+    return float(resultado_str)
 
 def graficar_serie_temporal(ri_values, parametros_info="", titulo_adicional=""):
     """
