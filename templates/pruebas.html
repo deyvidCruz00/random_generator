@@ -7,241 +7,7 @@
   <title>Pruebas de Números Aleatorios | Tema Matriz</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto+Mono&display=swap"
     rel="stylesheet">
-  <style>
-    :root {
-      --primary-color: #22c55e;
-      /* verde matriz */
-      --primary-hover: #16a34a;
-      --secondary-color: #0f172a;
-      /* azul marino profundo */
-      --accent-color: #06b6d4;
-      /* cian brillante */
-      --background-color: #0a0a0a;
-      /* negro suave */
-      --text-color: #e2e8f0;
-      /* gris claro */
-      --border-color: #1e293b;
-      --card-shadow: 0 0 25px rgba(34, 197, 94, 0.15);
-      --card-hover-shadow: 0 0 35px rgba(34, 197, 94, 0.25);
-      --border-radius: 12px;
-    }
-
-    body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0;
-      padding: 40px 20px;
-      background-color: var(--background-color);
-      color: var(--text-color);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .container {
-      max-width: 600px;
-      width: 100%;
-      background: var(--secondary-color);
-      padding: 30px 40px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--card-shadow);
-      border: 1px solid var(--border-color);
-      transition: all 0.3s ease;
-    }
-
-    .container:hover {
-      box-shadow: var(--card-hover-shadow);
-    }
-
-    h1,
-    h2 {
-      text-align: center;
-      color: var(--text-color);
-      margin-bottom: 0.5em;
-      font-family: 'Roboto Mono', monospace;
-    }
-
-    h1 {
-      font-size: 2.5em;
-      font-weight: 600;
-      color: var(--primary-color);
-      text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
-    }
-
-    h2 {
-      font-size: 1.5em;
-      font-weight: 600;
-      margin-top: 1.5em;
-      padding-bottom: 10px;
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    .section {
-      margin-bottom: 25px;
-    }
-
-    .input-group {
-      display: flex;
-      gap: 10px;
-    }
-
-    input[type="number"] {
-      padding: 12px 15px;
-      margin-top: 5px;
-      width: 100%;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      font-size: 1rem;
-      background-color: #020617;
-      color: var(--text-color);
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-
-    input[type="number"]:focus {
-      outline: none;
-      border-color: var(--accent-color);
-      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.3);
-    }
-
-    button {
-      padding: 12px 25px;
-      background: var(--primary-color);
-      color: var(--secondary-color);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: 600;
-      transition: background-color 0.3s, transform 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-    }
-
-    button:hover {
-      background: var(--primary-hover);
-      transform: translateY(-2px);
-    }
-
-    .numbers-list {
-      margin-top: 15px;
-      padding: 15px;
-      background: #020617;
-      border: 1px dashed var(--border-color);
-      border-radius: 8px;
-      min-height: 50px;
-      max-height: 300px;
-      /* altura máxima visible */
-      overflow-y: auto;
-      /* scroll vertical */
-      overflow-x: hidden;
-      /* oculta scroll horizontal */
-      word-wrap: break-word;
-      font-size: 0.95rem;
-      color: #94a3b8;
-      font-family: 'Roboto Mono', monospace;
-      white-space: pre-wrap;
-      /* mantiene saltos de línea si los usas */
-    }
-
-    .checkbox-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-    }
-
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 50px;
-      height: 28px;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #334155;
-      transition: .4s;
-      border-radius: 28px;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 20px;
-      width: 20px;
-      left: 4px;
-      bottom: 4px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-
-    input:checked+.slider {
-      background-color: var(--primary-color);
-    }
-
-    input:focus+.slider {
-      box-shadow: 0 0 1px var(--primary-color);
-    }
-
-    input:checked+.slider:before {
-      transform: translateX(22px);
-    }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: normal;
-    }
-
-    /* Estilos para el botón de importar CSV */
-    .file-upload-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 20px;
-      background: transparent;
-      color: var(--accent-color);
-      border: 1px solid var(--accent-color);
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: background-color 0.3s, color 0.3s;
-      text-align: center;
-    }
-
-    .file-upload-btn:hover {
-      background-color: var(--accent-color);
-      color: var(--secondary-color);
-    }
-
-    .or-separator {
-      text-align: center;
-      margin: 15px 0;
-      color: #94a3b8;
-      font-family: 'Roboto Mono', monospace;
-    }
-
-    #csvFileInput {
-      display: none;
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles-pruebas.css') }}">
 </head>
 
 <body>
@@ -252,22 +18,13 @@
       <h2>Ingresar Números</h2>
       <div class="input-group">
         <input type="number" id="numeroInput" step="any" placeholder="Escribe un número pseudoaleatorio">
-        <button onclick="agregarNumero()">&#43; Agregar</button>
+        <button id="btnAgregar">+ Agregar</button>
       </div>
 
       <div class="or-separator">o</div>
 
-      <label for="csvFileInput" class="file-upload-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-upload"
-          viewBox="0 0 16 16">
-          <path
-            d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
-          <path
-            d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z" />
-        </svg>
-        Importar desde CSV
-      </label>
-      <input type="file" id="csvFileInput" onchange="importarCSV(event)" accept=".csv">
+      <label for="csvFileInput" class="file-upload-btn">Importar desde CSV</label>
+      <input type="file" id="csvFileInput" accept=".csv">
 
       <div class="numbers-list" id="listaNumeros">Tus números aparecerán aquí...</div>
     </div>
@@ -289,28 +46,25 @@
           </label>
           Prueba de Varianza
         </label>
-        <!-- Chi-cuadrado -->
         <label class="checkbox-label">
           <label class="switch">
-            <input type="checkbox" id="pruebaChi" onchange="toggleK('chi')">
+            <input type="checkbox" id="pruebaChi">
             <span class="slider"></span>
           </label>
           Prueba de Chi-cuadrado
         </label>
-        <div id="kChi" class="input-group" style="display:none; margin-left:20px; margin-top:10px;">
+        <div id="kChi" class="input-group" style="display:none;">
           <input type="number" id="chiK" step="any" placeholder="K para chi-cuadrado">
         </div>
-
-        <!-- Kolmogorov-Smirnov -->
         <label class="checkbox-label">
           <label class="switch">
-            <input type="checkbox" id="pruebaKolmogorov" onchange="toggleK('kolmogorov')">
+            <input type="checkbox" id="pruebaKolmogorov">
             <span class="slider"></span>
           </label>
           Prueba de Kolmogorov–Smirnov
         </label>
-        <div id="kKolmogorov" class="input-group" style="display:none; margin-left:20px; margin-top:10px;">
-          <input type="number" id="kolmogorovK" step="any" placeholder="K para kolmogorov–smirnov">
+        <div id="kKolmogorov" class="input-group" style="display:none;">
+          <input type="number" id="kolmogorovK" step="any" placeholder="K para Kolmogorov–Smirnov">
         </div>
         <label class="checkbox-label">
           <label class="switch">
@@ -335,176 +89,11 @@
     </div>
 
     <div class="section">
-      <button onclick="generarPruebas()">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-play-fill"
-          viewBox="0 0 16 16">
-          <path
-            d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
-        </svg>
-        Ejecutar Pruebas
-      </button>
+      <button id="btnGenerar">Ejecutar Pruebas</button>
     </div>
   </div>
 
-  <script>
-    let numeros = [];
-
-    function agregarNumero() {
-      const input = document.getElementById("numeroInput");
-      const valor = parseFloat(input.value);
-      if (!isNaN(valor)) {
-        numeros.push(valor);
-        mostrarNumeros();
-        input.value = "";
-        input.focus();
-      } else {
-        alert("Por favor, ingresa un número válido.");
-      }
-    }
-
-    function mostrarNumeros() {
-      const lista = document.getElementById("listaNumeros");
-      if (numeros.length > 0) {
-        lista.innerHTML = numeros.join(", ");
-      } else {
-        lista.innerHTML = "Tus números aparecerán aquí...";
-      }
-    }
-
-    function importarCSV(event) {
-      const file = event.target.files[0];
-      if (!file) {
-        return;
-      }
-
-      if (!file.name.endsWith('.csv')) {
-        alert('Por favor, selecciona un archivo con extensión .csv');
-        return;
-      }
-
-      const reader = new FileReader();
-
-      reader.onload = function (e) {
-        const text = e.target.result;
-        // Divide por saltos de línea o comas, luego aplana el array y filtra valores vacíos.
-        const potentialNumbers = text.split(/[\r\n,]+/).filter(Boolean);
-
-        const importedNumbers = potentialNumbers
-          .map(val => parseFloat(val.trim())) // Convierte a número
-          .filter(num => !isNaN(num)); // Filtra los que no son números
-
-        if (importedNumbers.length > 0) {
-          numeros = numeros.concat(importedNumbers); // Añade los números nuevos a la lista existente
-          mostrarNumeros();
-        } else {
-          alert('No se encontraron números válidos en el archivo CSV.');
-        }
-        // Limpia el valor del input para permitir cargar el mismo archivo de nuevo
-        event.target.value = '';
-      };
-
-      reader.onerror = function () {
-        alert('Ocurrió un error al leer el archivo.');
-      };
-
-      reader.readAsText(file);
-    }
-
-    function toggleK(prueba) {
-      const div = document.getElementById(`k${prueba.charAt(0).toUpperCase() + prueba.slice(1)}`);
-      const checkbox = document.getElementById(`prueba${prueba.charAt(0).toUpperCase() + prueba.slice(1)}`);
-      div.style.display = checkbox.checked ? "flex" : "none";
-    }
-
-
-
-    async function generarPruebas() {
-      const chiChecked = document.getElementById("pruebaChi").checked;
-      const kolChecked = document.getElementById("pruebaKolmogorov").checked;
-
-      let chiK = null;
-      let kolK = null;
-
-      if (chiChecked) {
-        chiK = parseInt(document.getElementById("chiK").value, 10);
-        if (isNaN(chiK) || chiK < 2) {
-          alert("El valor de K para Chi-cuadrado debe ser un entero mayor o igual a 2.");
-          return;
-        }
-      }
-
-      if (kolChecked) {
-        kolK = parseInt(document.getElementById("kolmogorovK").value, 10);
-        if (isNaN(kolK) || kolK < 1) {
-          alert("El valor de K para Kolmogorov–Smirnov debe ser un entero mayor o igual a 1.");
-          return;
-        }
-      }
-
-      const pruebasSeleccionadas = {
-        medias: document.getElementById("pruebaMedias").checked,
-        varianza: document.getElementById("pruebaVarianza").checked,
-        chi: chiChecked ? { k: chiK } : false,
-        kolmogorov: kolChecked ? { k: kolK } : false,
-        poker: document.getElementById("pruebaPoker").checked,
-        rachas: document.getElementById("pruebaRachas").checked
-      };
-
-      const alpha = parseFloat(document.getElementById("alphaInput").value);
-
-      if (numeros.length === 0) {
-        alert("Debes agregar al menos un número antes de generar las pruebas.");
-        return;
-      }
-
-      const datos = {
-        numeros,
-        pruebasSeleccionadas,
-        alpha
-      };
-
-      try {
-        const response = await fetch("/set", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(numeros)
-        });
-
-
-      } catch (error) {
-         console.error(error);
-        alert("Ocurrió un error al settear");
-      }
-
-      try {
-        const response = await fetch("/evaluar", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(datos)
-        });
-
-        if (!response.ok) {
-          throw new Error("Error en la petición al servidor");
-        }
-
-        const resultado = await response.json();
-        console.log("Resultados del backend:", resultado);
-        sessionStorage.setItem("resultadosPruebas", JSON.stringify(resultado));
-      } catch (error) {
-        console.error(error);
-        alert("Ocurrió un error al ejecutar las pruebas.");
-      }
-
-      window.location.href = "/resultados";
-    }
-
-
-
-  </script>
+  <script type="module" src="{{ url_for('static', filename='js/mainPruebas.js') }}"></script>
 </body>
 
 </html>
