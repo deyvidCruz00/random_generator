@@ -332,25 +332,36 @@
 
       const n = nums.length;
 
-      // 🔹 Media
-      const media = nums.reduce((a, b) => a + b, 0) / n;
-
-      // 🔹 Mediana
-      const ordenados = [...nums].sort((a, b) => a - b);
-      const mitad = Math.floor(n / 2);
-      const mediana = n % 2 !== 0 ? ordenados[mitad] : (ordenados[mitad - 1] + ordenados[mitad]) / 2;
+      // 🔹 Media (una sola pasada)
+      let suma = 0;
+      let max = -Infinity;
+      let min = Infinity;
 
       // 🔹 Frecuencias
       const freq = new Map();
-      for (let v of nums) {
-        freq.set(v, (freq.get(v) || 0) + 1);
-      }
-
       let maxFrecuencia = 0;
-      for (const f of freq.values()) {
-        if (f > maxFrecuencia) maxFrecuencia = f;
+
+      for (let v of nums) {
+        suma += v;
+        if (v > max) max = v;
+        if (v < min) min = v;
+
+        const f = (freq.get(v) || 0) + 1;
+        freq.set(v, f);
+
+        if (f > maxFrecuencia) {
+          maxFrecuencia = f;
+        }
       }
 
+      const media = suma / n;
+
+      // 🔹 Mediana (ordenar es inevitable si la necesitas exacta)
+      const ordenados = [...nums].sort((a, b) => a - b);
+      const mitad = Math.floor(n / 2);
+      const mediana = (n % 2 !== 0) ? ordenados[mitad] : (ordenados[mitad - 1] + ordenados[mitad]) / 2;
+
+      // 🔹 Obtener solo las modas (máxima frecuencia)
       let modas = [];
       if (maxFrecuencia > 1) {
         for (const [valor, f] of freq.entries()) {
@@ -361,8 +372,6 @@
         modas.sort((a, b) => a.valor - b.valor);
       }
 
-      const max = Math.max(...nums);
-      const min = Math.min(...nums);
       const rango = max - min;
 
       return { media, mediana, modas, max, min, rango, maxFrecuencia };
@@ -373,12 +382,16 @@
 
       let modasHtml = "";
       if (stats.maxFrecuencia <= 1) {
-        // Caso sin moda
         modasHtml = `<div class="stat-value" style="font-size:14px; color:#94a3b8;">Todos son diferentes (no hay moda)</div>`;
       } else {
-        // Mostrar todas las modas con su frecuencia
+        // 🔹 Límite de visualización para eficiencia
+        const limite = 50;
+        const total = stats.modas.length;
+        const mostrar = stats.modas.slice(0, limite);
+
         modasHtml = `<div class="moda-scroll">` +
-          stats.modas.map(m => `<span class="moda-item">${m.valor} (${m.frecuencia})</span>`).join("") +
+          mostrar.map(m => `<span class="moda-item">${m.valor} (${m.frecuencia})</span>`).join("") +
+          (total > limite ? `<span class="moda-item">+${total - limite} más</span>` : "") +
           `</div>`;
       }
 

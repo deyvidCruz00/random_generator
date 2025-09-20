@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Generador - Distribución Normal</h2>
+<div class="row">
+  <!-- Formulario -->
+  <div class="col-md-6">
+    <form method="POST">
+      <div class="mb-3">
+        <label>Media (μ):</label>
+        <input type="number" step="any" name="media" class="form-control" required value="{{ media }}">
+      </div>
+      <div class="mb-3">
+        <label>Desviación estándar (σ):</label>
+        <input type="number" step="any" name="desviacion" class="form-control" required value="{{ desviacion }}">
+      </div>
+      <button type="submit" name="accion" value="calcular" class="btn btn-primary me-2"> Calcular</button>
+      <button formaction="/exportar_normal_csv" formmethod="POST" class="btn btn-success"> Exportar CSV</button>
+    </form>
+  </div>
+
+  <!-- Vista previa parámetros -->
+  <div class="col-md-6">
+    <div class="card p-3 shadow-sm">
+      <h5 class="card-title">Parámetros actuales</h5>
+      <p><strong>Media (μ):</strong> <span id="preview_media">{{ media }}</span></p>
+      <p><strong>Desviación estándar (σ):</strong> <span id="preview_desviacion">{{ desviacion }}</span></p>
+    </div>
+  </div>
+</div>
+
+{% if resultados_pruebas %}
+<hr>
+<h3>Resultados de Pruebas Estadísticas</h3>
+{% if resultados_pruebas.error %}
+<div class="alert alert-danger">
+  <strong>Error en las pruebas:</strong> {{ resultados_pruebas.error }}
+</div>
+{% elif resultados_pruebas.mensaje_error %}
+<div class="alert alert-warning">
+  <strong>⚠️ Distribución bloqueada:</strong> {{ resultados_pruebas.mensaje_error }}
+</div>
+{% endif %}
+
+<div class="row">
+  {% for prueba, resultado in resultados_pruebas.items() %}
+  {% if prueba not in ['error', 'mensaje_error'] %}
+  <div class="col-md-6 mb-3">
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0">{{ prueba.title() }}</h6>
+      </div>
+      <div class="card-body">
+        {% if resultado.pasa %}
+        <span class="badge bg-success">✓ PASA</span>
+        {% else %}
+        <span class="badge bg-danger">✗ NO PASA</span>
+        {% endif %}
+        {% if resultado.estadistico %}
+        <p class="mb-1"><small>Estadístico: {{ "%.4f"|format(resultado.estadistico) }}</small></p>
+        {% endif %}
+        {% if resultado.valor_critico %}
+        <p class="mb-1"><small>Valor crítico: {{ "%.4f"|format(resultado.valor_critico) }}</small></p>
+        {% endif %}
+        {% if resultado.p_value %}
+        <p class="mb-0"><small>P-value: {{ "%.4f"|format(resultado.p_value) }}</small></p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if grafico %}
+<hr>
+<h3>Gráfico</h3>
+<img src="data:image/png;base64,{{ grafico }}" class="img-fluid" alt="Gráfico distribución normal">
+{% endif %}
+
+{% if table %}
+<hr>
+<h3>Resultados</h3>
+{{ table|safe }}
+{% endif %}
+
+<script>
+  // Actualizar en tiempo real los parámetros ingresados
+  document.querySelectorAll("input[name=media], input[name=desviacion], input[name=min], input[name=max], input[name=iteraciones]").forEach(input => {
+    input.addEventListener("input", () => {
+      document.getElementById("preview_media").textContent = document.querySelector("input[name=media]").value;
+      document.getElementById("preview_desviacion").textContent = document.querySelector("input[name=desviacion]").value;
+      document.getElementById("preview_min").textContent = document.querySelector("input[name=min]").value;
+      document.getElementById("preview_max").textContent = document.querySelector("input[name=max]").value;
+      document.getElementById("preview_n").textContent = document.querySelector("input[name=iteraciones]").value;
+    });
+  });
+</script>
+{% endblock %}

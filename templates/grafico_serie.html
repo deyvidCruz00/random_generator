@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Serie Temporal - {{ metodo }}</h2>
+        <a href="{{ volver_url }}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i> Volver al Generador
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if error %}
+  <div class="row">
+    <div class="col-12">
+      <div class="alert alert-danger" role="alert">
+        <h5><i class="fas fa-exclamation-triangle"></i> Error</h5>
+        <p>{{ error }}</p>
+        <a href="{{ volver_url }}" class="btn btn-primary">Ir al Generador</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  
+  <!-- Información del conjunto de datos -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-info-circle"></i> Información del Conjunto</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Método:</strong> {{ metodo }}</p>
+              <p><strong>Total de números generados:</strong> {{ total_numeros }}</p>
+            </div>
+            <div class="col-md-6">
+              {% if titulo_adicional %}
+              <p><strong>Parámetros:</strong> {{ titulo_adicional }}</p>
+              {% endif %}
+              <p><small class="text-muted">
+                <i class="fas fa-chart-line"></i> 
+                Los gráficos de series temporales muestran la evolución de los valores Ri a lo largo del tiempo, 
+                permitiendo identificar patrones, tendencias y la calidad de la aleatoriedad.
+              </small></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0"><i class="fas fa-chart-line"></i> Gráfico de Serie Temporal</h5>
+        </div>
+        <div class="card-body text-center">
+          {% if grafico %}
+          <img src="data:image/png;base64,{{ grafico }}" 
+               class="img-fluid" 
+               alt="Gráfico de Serie Temporal - {{ metodo }}"
+               style="max-width: 100%; height: auto;">
+          {% else %}
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            No se pudo generar el gráfico. Verifica que los datos estén disponibles.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interpretación del gráfico -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Interpretación del Gráfico</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6><i class="fas fa-check-circle text-success"></i> Qué buscar (comportamiento ideal):</h6>
+              <ul class="list-unstyled">
+                <li><i class="fas fa-arrow-right text-primary"></i> Distribución uniforme entre 0 y 1</li>
+                <li><i class="fas fa-arrow-right text-primary"></i> Sin patrones repetitivos visibles</li>
+                <li><i class="fas fa-arrow-right text-primary"></i> Media cercana a 0.5 (línea roja)</li>
+                <li><i class="fas fa-arrow-right text-primary"></i> Variación aleatoria sin tendencias</li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <h6><i class="fas fa-exclamation-triangle text-warning"></i> Señales de alarma:</h6>
+              <ul class="list-unstyled">
+                <li><i class="fas fa-times text-danger"></i> Patrones cíclicos repetitivos</li>
+                <li><i class="fas fa-times text-danger"></i> Valores concentrados en ciertas regiones</li>
+                <li><i class="fas fa-times text-danger"></i> Tendencias ascendentes o descendentes</li>
+                <li><i class="fas fa-times text-danger"></i> Media muy alejada de 0.5</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones adicionales -->
+  <div class="row mt-4 mb-4">
+    <div class="col-12 text-center">
+      <div class="btn-group" role="group">
+        <a href="{{ volver_url }}" class="btn btn-primary">
+          <i class="fas fa-arrow-left"></i> Volver al Generador
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% endif %}
+</div>
+
+<style>
+@media print {
+  .btn, .card-header, nav, footer {
+    display: none !important;
+  }
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+}
+</style>
+{% endblock %}
