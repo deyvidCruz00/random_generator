@@ -7,18 +7,6 @@
 
 Una aplicación web  para la generación, análisis y validación de números pseudoaleatorios, implementando múltiples algoritmos clásicos con interfaz intuitiva y herramientas de visualización.
 
-##  Tabla de Contenidos
-
-- [Características](#-características)
-- [Métodos Implementados](#-métodos-implementados)
-- [Instalación](#-instalación)
-- [Uso](#-uso)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Pruebas Estadísticas](#-pruebas-estadísticas)
-- [Capturas de Pantalla](#-capturas-de-pantalla)
-- [Contribuir](#-contribuir)
-- [Licencia](#-licencia)
-
 ##  Características
 
 ### **Generación de Números**
