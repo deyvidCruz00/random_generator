@@ -67,11 +67,11 @@ def prueba_chi_cuadrado(datos, k=8, alpha=0.05):
     for i in range(k):
         resultado["intervals_data"].append({
             "no": i+1,                                    # Número del intervalo
-            "inicio": round(float(intervalos[i]), 8),     # Límite inferior
-            "fin": round(float(intervalos[i+1]), 8),      # Límite superior
+            "inicio": float(intervalos[i]),     # Límite inferior
+            "fin": float(intervalos[i+1]),      # Límite superior
             "frecuencia_obt": int(frecuencias_obs[i]),    # Datos observados en este intervalo
-            "frecuencia_esp": round(float(freq_esp), 3),  # Datos esperados (n/k)
-            "chi2": round(float(chi2_vals[i]), 3)         # Contribución chi² de este intervalo
+            "frecuencia_esp": float(freq_esp),  # Datos esperados (n/k)
+            "chi2": float(chi2_vals[i])         # Contribución chi² de este intervalo
         })
 
     return json.dumps(resultado, ensure_ascii=False, indent=2)

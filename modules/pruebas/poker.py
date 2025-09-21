@@ -10,6 +10,8 @@ def poker_test_json(datos, alpha=0.05):
     Parámetros:
     - datos: lista de números pseudoaleatorios a analizar
     - alpha: nivel de significancia (default: 0.05)
+    
+    Retorna: JSON string con los resultados del test
     """
     n = len(datos)
 
@@ -24,84 +26,88 @@ def poker_test_json(datos, alpha=0.05):
         "Q": 0.0001    # Quintilla - todos iguales (ej: 11111)
     }
 
-    def classify(num):
-        """
-        Clasifica un número según el patrón de sus dígitos
-        Toma los primeros 5 dígitos después del punto decimal
-        """
-        # Extrae 5 dígitos del número (quita "0." del inicio)
-        digits = list(str(num).replace("0.", ""))[:5]
+    def extract_digits(num):
+        """Extrae exactamente 5 dígitos después del punto decimal"""
+        str_num = str(num)
+        if '.' in str_num:
+            decimal_part = str_num.split('.')[1]
+        else:
+            decimal_part = ""
         
-        # Cuenta cuántas veces aparece cada dígito
+        # Asegurar exactamente 5 dígitos
+        if len(decimal_part) < 5:
+            decimal_part = decimal_part.ljust(5, '0')
+        else:
+            decimal_part = decimal_part[:5]
+            
+        return list(decimal_part)
+
+    def classify(num):
+        """Clasifica un número según el patrón de sus dígitos"""
+        digits = extract_digits(num)
         counts = sorted(Counter(digits).values(), reverse=True)
         
-        # Clasifica según el patrón de repeticiones
-        if counts == [5]:           # Todos iguales: 11111
-            return "Q"  # Quintilla
-        elif counts == [4,1]:       # Cuatro iguales: 11112
-            return "P"  # Poker
-        elif counts == [3,2]:       # Tres + dos: 11122
-            return "F"  # Full
-        elif counts == [3,1,1]:     # Tres iguales: 11123
-            return "K"  # Tercia
-        elif counts == [2,2,1]:     # Dos pares: 11223
-            return "T"  # Dos pares
-        elif counts == [2,1,1,1]:   # Un par: 11234
-            return "O"  # Un par
-        else:                       # Todos diferentes: 12345
-            return "D"  # Todos diferentes
+        if counts == [5]:           return "Q"  # Quintilla
+        elif counts == [4, 1]:      return "P"  # Poker
+        elif counts == [3, 2]:      return "F"  # Full
+        elif counts == [3, 1, 1]:   return "K"  # Tercia
+        elif counts == [2, 2, 1]:   return "T"  # Dos pares
+        elif counts == [2, 1, 1, 1]: return "O"  # Un par
+        else:                       return "D"  # Todos diferentes
 
-    # PASO 1: Clasificar cada número según su patrón
-    observed = {cat: 0 for cat in probs}  # Contador de observaciones
+    # Clasificar cada número según su patrón
+    observed = {cat: 0 for cat in probs}
     for num in datos:
         cat = classify(num)
         observed[cat] += 1
 
-    # PASO 2: Calcular frecuencias esperadas
+    # Calcular frecuencias esperadas
     expected = {cat: n * p for cat, p in probs.items()}
 
-    # PASO 3: Preparar datos para la prueba chi-cuadrado
+    # Preparar datos para la prueba chi-cuadrado
     categories_data = []
-    suma_oi = 0      # Suma de observados (debe ser = n)
-    suma_chi2 = 0    # Estadístico chi-cuadrado
+    suma_oi = 0
+    suma_chi2 = 0
+    
+    descriptions = {
+        "D": "Todos diferentes", "O": "Un par", "T": "Dos pares", 
+        "K": "Tercia", "F": "Full House", "P": "Poker", "Q": "Quintilla"
+    }
     
     for cat in ["D", "O", "T", "K", "F", "P", "Q"]:
-        oi = observed[cat]     # Frecuencia observada
-        prob = probs[cat]      # Probabilidad teórica
-        ei = expected[cat]     # Frecuencia esperada
-        
-        # Componente chi-cuadrado: (Observado - Esperado)² / Esperado
+        oi = observed[cat]
+        prob = probs[cat]
+        ei = expected[cat]
         chi2_component = ((oi - ei)**2) / ei if ei > 0 else 0
         
         categories_data.append({
-            "Cat": cat,                    # Categoría (D, O, T, K, F, P, Q)
-            "Oi": oi,                      # Observados
-            "Prob": prob,                  # Probabilidad teórica
-            "Ei": ei,                      # Esperados
-            "(Oi-Ei)^2/Ei": chi2_component # Contribución al chi-cuadrado
+            "Cat": cat,
+            "Descripcion": descriptions[cat],
+            "Oi": oi,
+            "Prob": round(prob, 4),
+            "Ei": round(ei, 4),
+            "(Oi-Ei)^2/Ei": round(chi2_component, 6)
         })
         
         suma_oi += oi
         suma_chi2 += chi2_component
 
-    # PASO 4: Obtener valor crítico de chi-cuadrado
-    # gl = grados de libertad = categorías - 1 = 7 - 1 = 6
-    chi2_critical = stats.chi2.ppf(1 - alpha, 6)
-
-    # PASO 5: Decisión estadística
-    # Si chi2_calculado <= chi2_crítico, los datos pasan la prueba
+    # Obtener valor crítico y p-value
+    gl = len(probs) - 1
+    chi2_critical = stats.chi2.ppf(1 - alpha, gl)
     pasa_prueba = suma_chi2 <= chi2_critical
 
-    # PASO 6: Estructurar resultado
+    # Estructurar resultado
     result = {
         "test_name": "Prueba de Poker",
-        "intervals_data": categories_data,     # Detalles por categoría
+  
+        "intervals_data": categories_data,
         "statistics": {
-            "Suma_Oi": suma_oi,               # Total observado (= n)
-            "Chi2_calculado": suma_chi2,       # Estadístico chi-cuadrado
-            "critical_value": chi2_critical    # Valor crítico de tabla
+            "Suma_Oi": suma_oi,
+            "Chi2_calculado": suma_chi2,
+            "critical_value": chi2_critical 
         },      
-        "decision": "Pasa la prueba de poker." if pasa_prueba else "No pasa la prueba de poker.",
+        "decision": "Pasa la prueba de poker" if pasa_prueba else "No pasa la prueba de poker", 
         "isApproved": str(pasa_prueba)
     }
 
