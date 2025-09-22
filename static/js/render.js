@@ -330,8 +330,8 @@ export function renderResultados(resultados, nums) {
                 
                 <div class="stat-item"><strong>UR (esperado):</strong> ${prueba.UR.toFixed(5)}</div>
                 <div class="stat-item"><strong>Varianza:</strong> ${prueba.Varianza.toFixed(5)}</div>
-                <div class="stat-item"><strong>Z:</strong> ${prueba.Z.toFixed(5)}</div>
-                <div class="stat-item"><strong>Rango crítico (95%):</strong> [${prueba.Rango_min.toFixed(5)}, ${prueba.Rango_max.toFixed(5)}]</div>
+                <div class="stat-item"><strong>Z:</strong> ${prueba.Z}</div>
+                <div class="stat-item"><strong>Rango crítico (95%):</strong> [${prueba.Rango_min}, ${prueba.Rango_max}]</div>
             `;
         }
 
