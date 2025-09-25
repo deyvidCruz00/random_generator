@@ -198,7 +198,11 @@ random_generator/
 ##  Pruebas Estadísticas
 ### **Suite de Validación Automática**
 
-La aplicación incluye un conjunto completo de pruebas estadísticas para validar la calidad de los números generados:
+La aplicación incluye un conjunto completo de pruebas estadísticas para validar la calidad de los números generados ingresando al siguiente endpoint al ejecutar la aplicacion:
+
+```
+localhost:5000/pruebas
+```
 
 #### **Pruebas Implementadas**
 
